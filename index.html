@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Training HQ" />
+  <title>Training HQ</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: #030712; color: #f9fafb; }
+    body { -webkit-text-size-adjust: 100%; }
+    input, button { font-family: inherit; }
+    /* hide scrollbars */
+    ::-webkit-scrollbar { display: none; }
+    * { scrollbar-width: none; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- React + ReactDOM + Babel from CDN -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel">
+const { useState, useEffect } = React;
+
+
+const PROGRAM = {
+  Monday: {
+    label: "Push A", subtitle: "Chest Focus", type: "lift", color: "#22c55e",
+    exercises: [
+      { name: "Smith Machine Bench Press", equipment: "Smith Machine", sets: 4, reps: "8-10", rest: 90 },
+      { name: "Cable Chest Fly", equipment: "Cable Machine", sets: 3, reps: "12-15", rest: 60 },
+      { name: "Smith Machine Incline Press", equipment: "Smith Machine", sets: 3, reps: "10-12", rest: 90 },
+      { name: "Cable Lateral Raise", equipment: "Cable Machine", sets: 3, reps: "12-15", rest: 60 },
+      { name: "Cable Tricep Pushdown", equipment: "Cable Machine", sets: 3, reps: "12-15", rest: 60 },
+    ],
+    cardio: { type: "Speed Intervals", detail: "6x400m at 6:30/mi pace, 90s rest", duration: "~25 min", rpe: "8" }
+  },
+  Tuesday: {
+    label: "Pull A", subtitle: "Back Width Focus", type: "lift", color: "#3b82f6",
+    exercises: [
+      { name: "Lat Pulldown Wide Grip", equipment: "Lat Pulldown", sets: 4, reps: "8-10", rest: 90 },
+      { name: "Lat Pulldown Close Grip", equipment: "Lat Pulldown", sets: 3, reps: "10-12", rest: 75 },
+      { name: "Lever Seated Row Wide", equipment: "Lever Seated Row", sets: 3, reps: "10-12", rest: 75 },
+      { name: "Cable Straight-Arm Pulldown", equipment: "Cable Machine", sets: 3, reps: "12-15", rest: 60 },
+      { name: "Dumbbell Curl", equipment: "Free Weights", sets: 3, reps: "10-12", rest: 60 },
+    ],
+    cardio: { type: "Active Recovery", detail: "Easy 20 min row, bike or elliptical", duration: "20 min", rpe: "4" }
+  },
+  Wednesday: {
+    label: "Legs A", subtitle: "Quad Focus", type: "lift", color: "#f59e0b",
+    exercises: [
+      { name: "Incline Leg Press", equipment: "Leg Press", sets: 4, reps: "10-12", rest: 120 },
+      { name: "Leg Extension", equipment: "Leg Extension Machine", sets: 3, reps: "12-15", rest: 75 },
+      { name: "Romanian Deadlift", equipment: "Free Weights", sets: 3, reps: "10-12", rest: 90 },
+      { name: "Smith Machine Lunge", equipment: "Smith Machine", sets: 3, reps: "10 ea.", rest: 75 },
+      { name: "Calf Raise on Leg Press", equipment: "Leg Press", sets: 4, reps: "15-20", rest: 45 },
+    ],
+    cardio: null
+  },
+  Thursday: {
+    label: "Push B", subtitle: "Shoulder Focus", type: "lift", color: "#a855f7",
+    exercises: [
+      { name: "Smith Machine Overhead Press", equipment: "Smith Machine", sets: 4, reps: "8-10", rest: 90 },
+      { name: "Cable Lateral Raise", equipment: "Cable Machine", sets: 4, reps: "12-15", rest: 60 },
+      { name: "Dumbbell Incline Press", equipment: "Free Weights", sets: 3, reps: "10-12", rest: 75 },
+      { name: "Cable Chest Fly Low to High", equipment: "Cable Machine", sets: 3, reps: "12-15", rest: 60 },
+      { name: "Tricep Overhead Extension", equipment: "Cable or DBs", sets: 3, reps: "12-15", rest: 60 },
+    ],
+    cardio: { type: "Tempo Run", detail: "2 miles at 7:30-8:00/mi", duration: "~18 min", rpe: "7" }
+  },
+  Friday: {
+    label: "Pull B", subtitle: "Back Thickness + Rear Delts", type: "lift", color: "#ef4444",
+    exercises: [
+      { name: "Lever Seated Row Narrow", equipment: "Lever Seated Row", sets: 4, reps: "8-10", rest: 90 },
+      { name: "Lat Pulldown Underhand", equipment: "Lat Pulldown", sets: 3, reps: "10-12", rest: 75 },
+      { name: "Cable Face Pull", equipment: "Cable Machine", sets: 3, reps: "15-20", rest: 60 },
+      { name: "Dumbbell Rear Delt Fly", equipment: "Free Weights", sets: 3, reps: "12-15", rest: 60 },
+      { name: "Hammer Curl", equipment: "Free Weights", sets: 3, reps: "10-12", rest: 60 },
+    ],
+    cardio: { type: "Active Recovery", detail: "Easy 20 min bike or elliptical", duration: "20 min", rpe: "4" }
+  },
+  Saturday: {
+    label: "Arms (Optional)", subtitle: "Weak Points + Long Run", type: "both", color: "#06b6d4",
+    exercises: [
+      { name: "EZ Bar Curl", equipment: "Free Weights", sets: 3, reps: "10-12", rest: 60 },
+      { name: "Tricep Pushdown Rope", equipment: "Cable Machine", sets: 3, reps: "12-15", rest: 60 },
+      { name: "Hammer Curl", equipment: "Free Weights", sets: 3, reps: "10-12", rest: 60 },
+      { name: "Skull Crusher DB", equipment: "Free Weights", sets: 3, reps: "10-12", rest: 60 },
+    ],
+    cardio: { type: "Long Easy Run", detail: "3-4 miles at ~9:30/mi conversational pace", duration: "35-40 min", rpe: "5" }
+  },
+  Sunday: {
+    label: "Rest", subtitle: "Full Recovery", type: "rest", color: "#475569",
+    exercises: [], cardio: null
+  }
+};
+
+const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+
+// Flat list of all exercises for the progress tab
+const ALL_EXERCISES = [];
+DAYS.forEach(day => {
+  PROGRAM[day].exercises.forEach(ex => {
+    if (!ALL_EXERCISES.find(e => e.name === ex.name)) {
+      ALL_EXERCISES.push({ name: ex.name, day, color: PROGRAM[day].color });
+    }
+  });
+});
+
+function getTodayName() {
+  const d = new Date().getDay();
+  return DAYS[d === 0 ? 6 : d - 1];
+}
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+function parseTime(t) {
+  if (!t || !t.includes(":")) return 9999;
+  const [m, s] = t.split(":");
+  return parseInt(m) * 60 + parseInt(s || 0);
+}
+function fmtTime(s) {
+  return s >= 9999 ? "--" : Math.floor(s/60) + ":" + String(s%60).padStart(2,"0");
+}
+
+function CheckIcon() {
+  return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
+}
+function PlusIcon() {
+  return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
+}
+function ChartIcon() {
+  return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>;
+}
+
+function RestTimer({ seconds, onClose }) {
+  const [rem, setRem] = useState(seconds);
+  const [paused, setPaused] = useState(false);
+  useEffect(() => {
+    if (paused || rem <= 0) return;
+    const t = setTimeout(() => setRem(r => r - 1), 1000);
+    return () => clearTimeout(t);
+  }, [rem, paused]);
+  const circ = 2 * Math.PI * 52;
+  const col = rem <= 10 ? "#ef4444" : rem <= 30 ? "#f59e0b" : "#22c55e";
+  return (
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.88)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:999,backdropFilter:"blur(6px)"}}>
+      <div onClick={e => e.stopPropagation()} style={{background:"#0f172a",borderRadius:24,padding:"36px 44px",textAlign:"center",border:"1px solid #1f2937",minWidth:260}}>
+        <div style={{fontSize:11,letterSpacing:3,color:"#4b5563",marginBottom:20,textTransform:"uppercase",fontFamily:"monospace"}}>Rest Timer</div>
+        <div style={{position:"relative",width:130,height:130,margin:"0 auto 24px"}}>
+          <svg width="130" height="130" style={{position:"absolute",inset:0,transform:"rotate(-90deg)"}}>
+            <circle cx="65" cy="65" r="52" fill="none" stroke="#1f2937" strokeWidth="7"/>
+            <circle cx="65" cy="65" r="52" fill="none" stroke={col} strokeWidth="7"
+              strokeDasharray={circ} strokeDashoffset={circ * (rem / seconds)}
+              strokeLinecap="round" style={{transition:"stroke-dashoffset 1s linear,stroke 0.3s"}}/>
+          </svg>
+          <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+            <div style={{fontSize:44,fontWeight:700,color:col,fontFamily:"monospace",lineHeight:1}}>{rem}</div>
+            <div style={{fontSize:11,color:"#6b7280",marginTop:2}}>sec</div>
+          </div>
+        </div>
+        {rem <= 0 && <div style={{fontSize:16,fontWeight:700,color:"#22c55e",marginBottom:12}}>Go! 💪</div>}
+        <div style={{display:"flex",gap:10,justifyContent:"center"}}>
+          <button onClick={() => setPaused(p => !p)} style={{padding:"9px 20px",borderRadius:10,border:"1px solid #374151",background:"#1f2937",color:"#d1d5db",cursor:"pointer",fontSize:13,fontFamily:"monospace"}}>
+            {paused ? "Resume" : "Pause"}
+          </button>
+          <button onClick={onClose} style={{padding:"9px 20px",borderRadius:10,border:"none",background:col,color:"#000",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"monospace"}}>Done</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Mini sparkline chart for exercise progress
+function WeightChart({ history, color }) {
+  if (!history || history.length < 2) return null;
+  const vals = history.map(h => h.weight);
+  const min = Math.min(...vals) - 5;
+  const max = Math.max(...vals) + 5;
+  const W = 300, H = 80;
+  const pts = vals.map((v, i) => ({
+    x: 20 + (i / (vals.length - 1)) * (W - 40),
+    y: H - 14 - ((v - min) / (max - min)) * (H - 28)
+  }));
+  const pathD = pts.map((p, i) => (i === 0 ? "M" : "L") + p.x.toFixed(1) + "," + p.y.toFixed(1)).join(" ");
+  const areaD = pathD + " L" + pts[pts.length-1].x.toFixed(1) + "," + (H-14) + " L" + pts[0].x.toFixed(1) + "," + (H-14) + " Z";
+  const first = vals[0], last = vals[vals.length - 1];
+  const gain = last - first;
+  return (
+    <div style={{marginTop:8}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+        <span style={{fontSize:10,color:"#4b5563",fontFamily:"monospace"}}>
+          {history[0].date.slice(5)} — {history[history.length-1].date.slice(5)}
+        </span>
+        <span style={{fontSize:11,fontWeight:700,fontFamily:"monospace",color:gain>0?"#22c55e":gain<0?"#ef4444":"#6b7280"}}>
+          {gain > 0 ? "+" : ""}{gain} lbs
+        </span>
+      </div>
+      <svg viewBox={"0 0 " + W + " " + H} style={{width:"100%",height:80}}>
+        <defs>
+          <linearGradient id={"area_" + color.replace("#","")} x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.25"/>
+            <stop offset="100%" stopColor={color} stopOpacity="0.02"/>
+          </linearGradient>
+        </defs>
+        <path d={areaD} fill={"url(#area_" + color.replace("#","") + ")"} />
+        <path d={pathD} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        {pts.map((p, i) => (
+          <g key={i}>
+            <circle cx={p.x} cy={p.y} r="3.5" fill="#030712" stroke={color} strokeWidth="2"/>
+            <text x={p.x} y={H - 1} fill="#374151" fontSize="7" fontFamily="monospace" textAnchor="middle">{history[i].date.slice(5)}</text>
+            <text x={p.x} y={p.y - 7} fill={color} fontSize="8" fontFamily="monospace" fontWeight="700" textAnchor="middle">{vals[i]}</text>
+          </g>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
+// ── WORKOUT MODE ─────────────────────────────────────────────────────────────
+// States: "ready" → tap to start set → "resting" (timer) → tap to start next set
+function WorkoutMode({ exercise, color, lastWeight, onComplete, onClose, onWeightSave }) {
+  const totalSets = exercise.sets;
+  // phase: "ready" | "resting" | "done"
+  const [setNum, setSetNum] = useState(0);       // 0-indexed current set
+  const [phase, setPhase] = useState("ready");
+  const [rem, setRem] = useState(exercise.rest);
+  const [timerRunning, setTimerRunning] = useState(false);
+  const [weight, setWeight] = useState(lastWeight ? String(lastWeight) : "");
+  const [lastUsedWeight, setLastUsedWeight] = useState(lastWeight ? String(lastWeight) : "");
+  const [showWeightInput, setShowWeightInput] = useState(false);
+  const [setsWeights, setSetsWeights] = useState({});
+
+  useEffect(() => {
+    if (!timerRunning || rem <= 0) return;
+    const t = setTimeout(() => setRem(r => r - 1), 1000);
+    return () => clearTimeout(t);
+  }, [timerRunning, rem]);
+
+  useEffect(() => {
+    if (rem <= 0 && timerRunning) setTimerRunning(false);
+  }, [rem, timerRunning]);
+
+  function handleTap() {
+    if (phase === "ready") {
+      // Mark set done, move to resting
+      const w = weight || lastUsedWeight;
+      if (w) {
+        setSetsWeights(prev => ({ ...prev, [setNum]: w }));
+        setLastUsedWeight(String(w));
+        onWeightSave(setNum, String(w));
+      }
+      onComplete(setNum); // mark set checked
+      if (setNum + 1 >= totalSets) {
+        setPhase("done");
+      } else {
+        setPhase("resting");
+        setRem(exercise.rest);
+        setTimerRunning(true);
+      }
+    } else if (phase === "resting") {
+      // Skip rest / rest finished — start next set, carry weight forward
+      setTimerRunning(false);
+      setSetNum(s => s + 1);
+      setPhase("ready");
+      setWeight(lastUsedWeight || (lastWeight ? String(lastWeight) : ""));
+    }
+  }
+
+  const circ = 2 * Math.PI * 80;
+  const restPct = rem / exercise.rest;
+  const timerCol = rem <= 10 ? "#ef4444" : rem <= exercise.rest * 0.4 ? "#f59e0b" : "#22c55e";
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"#030712",zIndex:200,display:"flex",flexDirection:"column",maxWidth:480,margin:"0 auto"}}>
+      {/* Header */}
+      <div style={{padding:"20px 20px 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div>
+          <div style={{fontSize:10,letterSpacing:3,color:color,fontFamily:"monospace",textTransform:"uppercase"}}>{exercise.equipment}</div>
+          <div style={{fontSize:18,fontWeight:800,letterSpacing:-0.3,marginTop:2}}>{exercise.name}</div>
+        </div>
+        <button onClick={onClose} style={{padding:"8px 14px",borderRadius:10,border:"1px solid #1f2937",background:"#0f172a",color:"#6b7280",cursor:"pointer",fontSize:12,fontFamily:"monospace"}}>Exit</button>
+      </div>
+
+      {/* Set dots */}
+      <div style={{display:"flex",gap:8,padding:"16px 20px 0",justifyContent:"center"}}>
+        {Array.from({length:totalSets}).map((_,i) => (
+          <div key={i} style={{width:i===setNum&&phase!=="done"?28:10,height:10,borderRadius:99,background:i<setNum||(i===setNum&&phase==="done")?color:i===setNum?"#1f2937":"#0f172a",border:"2px solid "+(i<=setNum?color:"#1f2937"),transition:"all 0.3s"}}/>
+        ))}
+      </div>
+
+      {/* Main tap area */}
+      <div onClick={phase !== "done" ? handleTap : undefined}
+        style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:phase!=="done"?"pointer":"default",userSelect:"none",padding:"0 24px",gap:0}}>
+
+        {phase === "ready" && (
+          <>
+            <div style={{fontSize:13,letterSpacing:3,color:"#4b5563",fontFamily:"monospace",textTransform:"uppercase",marginBottom:16}}>
+              Set {setNum + 1} of {totalSets}
+            </div>
+            <div style={{fontSize:72,fontWeight:800,fontFamily:"monospace",color:color,lineHeight:1,marginBottom:8}}>{exercise.reps}</div>
+            <div style={{fontSize:14,color:"#6b7280",marginBottom:32}}>reps</div>
+            {weight ? (
+              <div onClick={e => { e.stopPropagation(); setShowWeightInput(true); }} style={{background:color+"18",border:"1px solid "+color+"40",borderRadius:12,padding:"10px 20px",fontSize:22,fontWeight:800,fontFamily:"monospace",color:color,cursor:"pointer",marginBottom:24}}>
+                {weight} lbs
+              </div>
+            ) : (
+              <button onClick={e => { e.stopPropagation(); setShowWeightInput(true); }} style={{background:"#0f172a",border:"2px dashed #374151",borderRadius:12,padding:"10px 20px",fontSize:13,color:"#4b5563",cursor:"pointer",marginBottom:24,fontFamily:"monospace"}}>
+                + Set weight
+              </button>
+            )}
+            <div style={{fontSize:13,color:"#374151",letterSpacing:1}}>TAP ANYWHERE WHEN DONE</div>
+            <div style={{marginTop:12,fontSize:32,animation:"pulse 1.5s ease-in-out infinite"}}>👇</div>
+          </>
+        )}
+
+        {phase === "resting" && (
+          <>
+            <div style={{fontSize:13,letterSpacing:3,color:"#4b5563",fontFamily:"monospace",textTransform:"uppercase",marginBottom:24}}>
+              Rest — Set {setNum + 1} done
+            </div>
+            {/* Big ring timer */}
+            <div style={{position:"relative",width:200,height:200,marginBottom:24}}>
+              <svg width="200" height="200" style={{position:"absolute",inset:0,transform:"rotate(-90deg)"}}>
+                <circle cx="100" cy="100" r="80" fill="none" stroke="#0f172a" strokeWidth="10"/>
+                <circle cx="100" cy="100" r="80" fill="none" stroke={timerCol} strokeWidth="10"
+                  strokeDasharray={circ} strokeDashoffset={circ*(1-restPct)}
+                  strokeLinecap="round" style={{transition:"stroke-dashoffset 1s linear,stroke 0.3s"}}/>
+              </svg>
+              <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+                <div style={{fontSize:64,fontWeight:800,fontFamily:"monospace",color:timerCol,lineHeight:1}}>{rem}</div>
+                <div style={{fontSize:12,color:"#4b5563",marginTop:4}}>seconds</div>
+              </div>
+            </div>
+            <div style={{fontSize:13,color:rem<=0?"#22c55e":"#374151",letterSpacing:1,fontWeight:rem<=0?700:400}}>
+              {rem <= 0 ? "TAP TO START NEXT SET 💪" : "TAP TO SKIP REST"}
+            </div>
+          </>
+        )}
+
+        {phase === "done" && (
+          <>
+            <div style={{fontSize:64,marginBottom:16}}>🎉</div>
+            <div style={{fontSize:28,fontWeight:800,color:color,marginBottom:8,letterSpacing:-0.5}}>Exercise Done!</div>
+            <div style={{fontSize:14,color:"#6b7280",marginBottom:32}}>{totalSets} sets complete</div>
+            <button onClick={onClose} style={{padding:"14px 36px",borderRadius:14,border:"none",background:color,color:"#000",cursor:"pointer",fontSize:16,fontWeight:800,letterSpacing:-0.3}}>
+              Back to Workout
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* Weight input overlay */}
+      {showWeightInput && (
+        <div onClick={() => setShowWeightInput(false)} style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.8)",display:"flex",alignItems:"flex-end",zIndex:10}}>
+          <div onClick={e => e.stopPropagation()} style={{width:"100%",background:"#0f172a",borderRadius:"20px 20px 0 0",padding:"24px 20px 40px",border:"1px solid #1f2937"}}>
+            <div style={{fontSize:11,letterSpacing:3,color:color,fontFamily:"monospace",textTransform:"uppercase",marginBottom:12}}>Weight for set {setNum+1}</div>
+            <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:16}}>
+              <input type="number" placeholder={lastWeight||"0"} value={weight} autoFocus
+                onChange={e => setWeight(e.target.value)}
+                style={{flex:1,background:"#030712",border:"2px solid "+color,borderRadius:12,padding:"14px 16px",color:color,fontSize:32,fontWeight:800,fontFamily:"monospace",outline:"none",boxSizing:"border-box"}}/>
+              <span style={{fontSize:16,color:"#4b5563"}}>lbs</span>
+            </div>
+            {/* Quick increment buttons */}
+            <div style={{display:"flex",gap:8,marginBottom:16}}>
+              {[-5,-2.5,+2.5,+5].map(d => (
+                <button key={d} onClick={() => setWeight(w => String((parseFloat(w||lastWeight||0)+d).toFixed(1)))}
+                  style={{flex:1,padding:"10px 0",borderRadius:10,border:"1px solid #1f2937",background:"#030712",color:d>0?"#22c55e":"#ef4444",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"monospace"}}>
+                  {d>0?"+":""}{d}
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setShowWeightInput(false)} style={{width:"100%",padding:"14px",borderRadius:12,border:"none",background:color,color:"#000",cursor:"pointer",fontSize:15,fontWeight:800}}>
+              Confirm
+            </button>
+          </div>
+        </div>
+      )}
+
+      <style>{`@keyframes pulse { 0%,100%{opacity:1;transform:translateY(0)} 50%{opacity:0.4;transform:translateY(6px)} }`}</style>
+    </div>
+  );
+}
+
+function App() {
+  const [tab, setTab] = useState("today");
+  const [selDay, setSelDay] = useState(getTodayName);
+  const [timer, setTimer] = useState(null);
+  const [activeWorkout, setActiveWorkout] = useState(null); // { exIdx, isCustom, exId }
+
+  // ── PERSISTED STATE ──────────────────────────────────────────────────────
+  // Each piece of state loads from localStorage on mount and saves on every change.
+
+  function load(key, fallback) {
+    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
+  }
+
+  // workoutLogs[day] = { s_ei_si: bool, w_ei_si: "135", cardio: bool, done: bool }
+  const [workoutLogs, setWorkoutLogsRaw] = useState(() => load("dht_workoutLogs", {}));
+  function setWorkoutLogs(fn) {
+    setWorkoutLogsRaw(prev => {
+      const next = typeof fn === "function" ? fn(prev) : fn;
+      try { localStorage.setItem("dht_workoutLogs", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }
+
+  // weightHistory[exName] = [{ date, weight }]
+  const [weightHistory, setWeightHistoryRaw] = useState(() => load("dht_weightHistory", {}));
+  function setWeightHistory(fn) {
+    setWeightHistoryRaw(prev => {
+      const next = typeof fn === "function" ? fn(prev) : fn;
+      try { localStorage.setItem("dht_weightHistory", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }
+
+  // mileLog = [{ date, time, notes, id }]
+  const [mileLog, setMileLogRaw] = useState(() => load("dht_mileLog", []));
+  function setMileLog(fn) {
+    setMileLogRaw(prev => {
+      const next = typeof fn === "function" ? fn(prev) : fn;
+      try { localStorage.setItem("dht_mileLog", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }
+
+  // customExercises[day] = [{ id, name, equipment, sets, reps, rest }]
+  const [customExercises, setCustomExercisesRaw] = useState(() => load("dht_customExercises", {}));
+  function setCustomExercises(fn) {
+    setCustomExercisesRaw(prev => {
+      const next = typeof fn === "function" ? fn(prev) : fn;
+      try { localStorage.setItem("dht_customExercises", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
+  // Which exercise's weight input is open inline
+  const [weightOpen, setWeightOpen] = useState(null); // "ei_si"
+
+  // Progress tab: selected exercise
+  const [selExercise, setSelExercise] = useState(ALL_EXERCISES[0]?.name || "");
+
+  // Mile log form
+  const [showMileForm, setShowMileForm] = useState(false);
+  const [mileInput, setMileInput] = useState({ date: todayISO(), time: "", notes: "" });
+  const [showAddExercise, setShowAddExercise] = useState(false);
+  const [newEx, setNewEx] = useState({ name:"", equipment:"", sets:"3", reps:"10-12", rest:"60" });
+
+  const today = getTodayName();
+  const prog = PROGRAM[selDay];
+  const log = workoutLogs[selDay] || {};
+  const customExs = customExercises[selDay] || [];
+
+  function addCustomExercise() {
+    if (!newEx.name.trim()) return;
+    const ex = { ...newEx, sets: parseInt(newEx.sets)||3, rest: parseInt(newEx.rest)||60, id: Date.now() };
+    setCustomExercises(prev => ({ ...prev, [selDay]: [...(prev[selDay]||[]), ex] }));
+    setNewEx({ name:"", equipment:"", sets:"3", reps:"10-12", rest:"60" });
+    setShowAddExercise(false);
+  }
+
+  function removeCustomExercise(day, id) {
+    setCustomExercises(prev => ({ ...prev, [day]: (prev[day]||[]).filter(e => e.id !== id) }));
+  }
+
+  function toggleCustomSet(exId, setIdx) {
+    const key = "cs_" + exId + "_" + setIdx;
+    updateLog(selDay, { [key]: !log[key] });
+  }
+
+  function setCustomWeight(exId, exName, setIdx, val) {
+    const key = "cw_" + exId + "_" + setIdx;
+    updateLog(selDay, { [key]: val });
+    const numVal = parseFloat(val);
+    if (!isNaN(numVal) && numVal > 0) {
+      setWeightHistory(prev => {
+        const hist = prev[exName] || [];
+        const dateStr = todayISO();
+        const existing = hist.find(h => h.date === dateStr);
+        let updated;
+        if (existing) {
+          updated = hist.map(h => h.date === dateStr ? { ...h, weight: Math.max(h.weight, numVal) } : h);
+        } else {
+          updated = [...hist, { date: dateStr, weight: numVal }].sort((a,b) => a.date.localeCompare(b.date));
+        }
+        return { ...prev, [exName]: updated };
+      });
+    }
+  }
+
+  function updateLog(day, updates) {
+    setWorkoutLogs(prev => ({ ...prev, [day]: { ...(prev[day] || {}), ...updates } }));
+  }
+
+  function toggleSet(exIdx, setIdx) {
+    const key = "s_" + exIdx + "_" + setIdx;
+    updateLog(selDay, { [key]: !log[key] });
+  }
+
+  function setWeight(exIdx, setIdx, val) {
+    const key = "w_" + exIdx + "_" + setIdx;
+    updateLog(selDay, { [key]: val });
+    // Record in history: use max weight logged for this exercise today
+    const exName = prog.exercises[exIdx].name;
+    const numVal = parseFloat(val);
+    if (!isNaN(numVal) && numVal > 0) {
+      setWeightHistory(prev => {
+        const hist = prev[exName] || [];
+        const dateStr = todayISO();
+        const existing = hist.find(h => h.date === dateStr);
+        let updated;
+        if (existing) {
+          updated = hist.map(h => h.date === dateStr ? { ...h, weight: Math.max(h.weight, numVal) } : h);
+        } else {
+          updated = [...hist, { date: dateStr, weight: numVal }].sort((a,b) => a.date.localeCompare(b.date));
+        }
+        return { ...prev, [exName]: updated };
+      });
+    }
+  }
+
+  function toggleCardio() { updateLog(selDay, { cardio: !log.cardio }); }
+  function toggleDayDone() { updateLog(selDay, { done: !log.done }); }
+
+  function setsProgress(day) {
+    const p = PROGRAM[day];
+    const l = workoutLogs[day] || {};
+    const cExs = customExercises[day] || [];
+    let done = 0, total = 0;
+    p.exercises.forEach((ex, ei) => {
+      for (let s = 0; s < ex.sets; s++) {
+        total++;
+        if (l["s_" + ei + "_" + s]) done++;
+      }
+    });
+    cExs.forEach(ex => {
+      for (let s = 0; s < ex.sets; s++) {
+        total++;
+        if (l["cs_" + ex.id + "_" + s]) done++;
+      }
+    });
+    return { done, total };
+  }
+
+  function weekDone() {
+    return DAYS.filter(d => PROGRAM[d].type !== "rest" && (workoutLogs[d] || {}).done).length;
+  }
+
+  const totalWorkoutDays = DAYS.filter(d => PROGRAM[d].type !== "rest").length;
+
+  function addMile() {
+    if (!mileInput.time) return;
+    setMileLog(prev => [...prev, { ...mileInput, id: Date.now() }].sort((a,b) => a.date.localeCompare(b.date)));
+    setMileInput({ date: todayISO(), time: "", notes: "" });
+    setShowMileForm(false);
+  }
+
+  const inputStyle = { width:"100%", background:"#030712", border:"1px solid #1f2937", borderRadius:9, padding:"9px 12px", color:"#f9fafb", fontSize:14, fontFamily:"monospace", boxSizing:"border-box" };
+
+  const TABS = [["today","💪","Today"],["week","📅","Week"],["progress","📈","Progress"],["mile","🏃","Mile"]];
+
+  return (
+    <div style={{minHeight:"100vh",background:"#030712",color:"#f9fafb",fontFamily:"system-ui,sans-serif",maxWidth:480,margin:"0 auto",paddingBottom:72}}>
+      {timer && <RestTimer seconds={timer} onClose={() => setTimer(null)}/>}
+
+      {activeWorkout && (() => {
+        const { exIdx, isCustom, exId } = activeWorkout;
+        const ex = isCustom
+          ? customExs.find(e => e.id === exId)
+          : prog.exercises[exIdx];
+        if (!ex) return null;
+        const col = isCustom ? "#f59e0b" : prog.color;
+        const hist = weightHistory[ex.name] || [];
+        const prevEntries = hist.filter(h => h.date < todayISO());
+        const lastW = prevEntries.length ? prevEntries[prevEntries.length-1].weight : null;
+        return (
+          <WorkoutMode
+            exercise={ex}
+            color={col}
+            lastWeight={lastW}
+            onComplete={(si) => {
+              if (isCustom) toggleCustomSet(ex.id, si);
+              else toggleSet(exIdx, si);
+            }}
+            onWeightSave={(si, val) => {
+              if (isCustom) setCustomWeight(ex.id, ex.name, si, val);
+              else setWeight(exIdx, si, val);
+            }}
+            onClose={() => setActiveWorkout(null)}
+          />
+        );
+      })()}
+
+      {/* ── HEADER ── */}
+      <div style={{padding:"20px 16px 0",background:"#030712",position:"sticky",top:0,zIndex:50,borderBottom:"1px solid #0f172a"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+          <div>
+            <div style={{fontSize:10,letterSpacing:4,color:"#374151",textTransform:"uppercase",fontFamily:"monospace"}}>Dean's</div>
+            <div style={{fontSize:22,fontWeight:800,letterSpacing:-0.5}}>Training HQ</div>
+          </div>
+          <div style={{textAlign:"right"}}>
+            <div style={{fontSize:11,color:"#374151",fontFamily:"monospace"}}>{new Date().toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})}</div>
+            <div style={{display:"flex",alignItems:"center",gap:6,justifyContent:"flex-end",marginTop:4}}>
+              <div style={{width:56,height:5,borderRadius:99,background:"#1f2937",overflow:"hidden"}}>
+                <div style={{width:((weekDone()/totalWorkoutDays)*100)+"%",height:"100%",background:"#22c55e",borderRadius:99,transition:"width 0.4s"}}/>
+              </div>
+              <span style={{fontSize:10,color:"#6b7280",fontFamily:"monospace"}}>{weekDone()}/{totalWorkoutDays}</span>
+            </div>
+          </div>
+        </div>
+        <div style={{display:"flex",borderBottom:"1px solid #1f2937"}}>
+          {TABS.map(([k,,l]) => (
+            <button key={k} onClick={() => setTab(k)} style={{flex:1,padding:"9px 0",border:"none",background:"none",color:tab===k?"#f9fafb":"#4b5563",fontSize:12,fontWeight:tab===k?700:400,cursor:"pointer",borderBottom:"2px solid "+(tab===k?"#22c55e":"transparent"),transition:"all 0.2s"}}>
+              {l}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════
+          TODAY TAB
+      ══════════════════════════════════ */}
+      {tab === "today" && (
+        <div>
+          {/* Day pills */}
+          <div style={{display:"flex",gap:6,padding:"14px 16px",overflowX:"auto",scrollbarWidth:"none"}}>
+            {DAYS.map(d => {
+              const p = PROGRAM[d];
+              const isSel = d === selDay;
+              const sp = setsProgress(d);
+              return (
+                <button key={d} onClick={() => { setSelDay(d); setWeightOpen(null); }} style={{flexShrink:0,borderRadius:12,border:"2px solid "+(isSel?p.color:"#1f2937"),background:isSel?(p.color+"15"):"#0a0f1a",padding:"8px 12px",cursor:"pointer",minWidth:64,textAlign:"center",transition:"all 0.2s"}}>
+                  <div style={{fontSize:10,fontWeight:700,color:isSel?p.color:"#4b5563",fontFamily:"monospace",letterSpacing:1}}>{d===today?"* ":""}{d.slice(0,3).toUpperCase()}</div>
+                  <div style={{fontSize:10,color:isSel?"#e5e7eb":"#374151",marginTop:2}}>{p.label.split(" ")[0]}</div>
+                  {p.type !== "rest" && sp.total > 0 && (
+                    <div style={{marginTop:5,height:3,borderRadius:99,background:"#1f2937",overflow:"hidden"}}>
+                      <div style={{width:((sp.done/sp.total)*100)+"%",height:"100%",background:p.color,borderRadius:99}}/>
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Day header card */}
+          <div style={{margin:"0 16px 16px"}}>
+            <div style={{background:"#0a0f1a",borderRadius:16,padding:"18px",border:"1px solid "+(prog.color+"25")}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                <div>
+                  <div style={{fontSize:10,letterSpacing:3,color:prog.color,fontFamily:"monospace",textTransform:"uppercase",marginBottom:4}}>{selDay}</div>
+                  <div style={{fontSize:22,fontWeight:800,letterSpacing:-0.5,lineHeight:1}}>{prog.label}</div>
+                  <div style={{fontSize:12,color:"#6b7280",marginTop:3}}>{prog.subtitle}</div>
+                </div>
+                {prog.type !== "rest" && (
+                  <button onClick={toggleDayDone} style={{width:44,height:44,borderRadius:12,border:"2px solid "+(log.done?prog.color:"#1f2937"),background:log.done?prog.color:"#0f172a",color:log.done?"#000":"#374151",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.2s",flexShrink:0}}>
+                    <CheckIcon/>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {prog.type === "rest" ? (
+            <div style={{textAlign:"center",padding:"48px 16px"}}>
+              <div style={{fontSize:52,marginBottom:12}}>😴</div>
+              <div style={{fontSize:18,fontWeight:700,marginBottom:6}}>Rest Day</div>
+              <div style={{fontSize:13,color:"#4b5563"}}>This is where the gains actually happen.</div>
+            </div>
+          ) : (
+            <div>
+              <div style={{padding:"0 16px"}}>
+                <div style={{fontSize:10,letterSpacing:3,color:"#374151",textTransform:"uppercase",fontFamily:"monospace",marginBottom:10}}>Exercises</div>
+                <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                  {prog.exercises.map((ex, ei) => {
+                    const setsDone = Array.from({length:ex.sets}).filter((_,si) => log["s_"+ei+"_"+si]).length;
+                    // max weight logged this session
+                    const weights = Array.from({length:ex.sets}).map((_,si) => parseFloat(log["w_"+ei+"_"+si]||"0")).filter(w=>w>0);
+                    const maxW = weights.length ? Math.max(...weights) : null;
+                    // last session's max for this exercise
+                    const hist = weightHistory[ex.name] || [];
+                    const prevEntries = hist.filter(h => h.date < todayISO());
+                    const lastW = prevEntries.length ? prevEntries[prevEntries.length-1].weight : null;
+                    return (
+                      <div key={ei} style={{background:"#0a0f1a",borderRadius:14,padding:"14px",border:"1px solid #1f2937"}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                          <div style={{flex:1,paddingRight:8}}>
+                            <div style={{fontSize:14,fontWeight:600,marginBottom:2}}>{ex.name}</div>
+                            <div style={{fontSize:11,color:"#4b5563"}}>{ex.equipment} · {ex.reps} reps</div>
+                          </div>
+                          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2}}>
+                            <div style={{fontSize:11,color:setsDone===ex.sets?prog.color:"#4b5563",fontFamily:"monospace",fontWeight:700}}>{setsDone}/{ex.sets}</div>
+                            {lastW && <div style={{fontSize:10,color:"#374151",fontFamily:"monospace"}}>last: {lastW}lb</div>}
+                            <button onClick={() => setActiveWorkout({ exIdx: ei, isCustom: false })}
+                              style={{marginTop:4,padding:"4px 10px",borderRadius:8,border:"none",background:prog.color,color:"#000",cursor:"pointer",fontSize:11,fontWeight:800,fontFamily:"monospace",letterSpacing:0.5}}>
+                              ▶ START
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Sets row */}
+                        <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+                          {Array.from({length:ex.sets}).map((_,si) => {
+                            const done = log["s_"+ei+"_"+si];
+                            const w = log["w_"+ei+"_"+si] || "";
+                            // carry forward: nearest previous set's confirmed weight, fallback to last session
+                            const prevSetW = !w ? Array.from({length:si}).map((_,i) => log["w_"+ei+"_"+(si-1-i)]).find(v => v) : null;
+                            const suggestedW = !w ? (prevSetW || (lastW ? String(lastW) : "")) : "";
+                            const displayW = w || suggestedW;
+                            const isSuggested = !w && !!suggestedW;
+                            const isOpen = weightOpen === ei+"_"+si;
+                            return (
+                              <div key={si} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+                                <button onClick={() => toggleSet(ei, si)} style={{width:42,height:42,borderRadius:11,border:"2px solid "+(done?prog.color:"#1f2937"),background:done?prog.color:"#030712",color:done?"#000":"#4b5563",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"monospace",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.15s"}}>
+                                  {done ? <CheckIcon/> : si+1}
+                                </button>
+                                {/* Weight chip: green=confirmed, grey=suggested from last session, dim=empty */}
+                                <button onClick={() => setWeightOpen(isOpen ? null : ei+"_"+si)} style={{fontSize:9,fontFamily:"monospace",color:w?prog.color:isSuggested?"#9ca3af":"#374151",background:w?(prog.color+"18"):isSuggested?"#1f293780":"#0a0f1a",border:"1px solid "+(w?(prog.color+"40"):isSuggested?"#37415180":"#1f2937"),borderRadius:6,padding:"2px 5px",cursor:"pointer",minWidth:36,textAlign:"center",transition:"all 0.15s"}}>
+                                  {displayW ? displayW+"lb" : "+wt"}
+                                </button>
+                              </div>
+                            );
+                          })}
+                          <button onClick={() => setTimer(ex.rest)} style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:4,padding:"7px 10px",borderRadius:9,border:"1px solid #1f2937",background:"transparent",color:"#4b5563",cursor:"pointer",fontSize:11,fontFamily:"monospace"}}>
+                            ⏱ {ex.rest}s
+                          </button>
+                        </div>
+
+                        {/* Weight input panel */}
+                        {weightOpen && weightOpen.startsWith(ei+"_") && (() => {
+                          const si = parseInt(weightOpen.split("_")[1]);
+                          const wKey = "w_"+ei+"_"+si;
+                          return (
+                            <div style={{marginTop:10,padding:"10px 12px",background:"#030712",borderRadius:10,border:"1px solid "+prog.color+"30",display:"flex",alignItems:"center",gap:10}}>
+                              <span style={{fontSize:11,color:"#4b5563",fontFamily:"monospace",flexShrink:0}}>Set {si+1}:</span>
+                              <input
+                                type="number"
+                                placeholder={lastW ? String(lastW) : "lbs"}
+                                value={log[wKey] || ""}
+                                onChange={e => setWeight(ei, si, e.target.value)}
+                                style={{flex:1,background:"transparent",border:"none",color:prog.color,fontSize:18,fontWeight:700,fontFamily:"monospace",outline:"none",width:0}}
+                                autoFocus
+                              />
+                              <span style={{fontSize:12,color:"#4b5563"}}>lbs</span>
+                              {lastW && !log[wKey] && (
+                                <button onClick={() => { setWeight(ei, si, String(lastW)); setWeightOpen(null); }} style={{padding:"4px 8px",borderRadius:7,border:"1px solid #374151",background:"#1f2937",color:"#9ca3af",cursor:"pointer",fontSize:11,fontFamily:"monospace",flexShrink:0}}>
+                                  ={lastW}
+                                </button>
+                              )}
+                              <button onClick={() => setWeightOpen(null)} style={{padding:"4px 10px",borderRadius:7,border:"none",background:prog.color,color:"#000",cursor:"pointer",fontSize:12,fontWeight:700,flexShrink:0}}>OK</button>
+                            </div>
+                          );
+                        })()}
+
+                        {/* Progress hint */}
+                        {maxW && lastW && (
+                          <div style={{marginTop:8,fontSize:10,fontFamily:"monospace",color:maxW>lastW?"#22c55e":maxW<lastW?"#ef4444":"#6b7280",textAlign:"right"}}>
+                            {maxW > lastW ? "▲ +" + (maxW-lastW) + "lb PR today!" : maxW < lastW ? "▼ " + (maxW-lastW) + "lb vs last" : "= same as last time"}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* ── CUSTOM EXERCISES ── */}
+              <div style={{padding:"16px 16px 0"}}>
+                {customExs.length > 0 && (
+                  <div style={{marginBottom:10}}>
+                    <div style={{fontSize:10,letterSpacing:3,color:"#374151",textTransform:"uppercase",fontFamily:"monospace",marginBottom:10}}>Added by You</div>
+                    <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                      {customExs.map((ex) => {
+                        const setsDone = Array.from({length:ex.sets}).filter((_,si) => log["cs_"+ex.id+"_"+si]).length;
+                        const weights = Array.from({length:ex.sets}).map((_,si) => parseFloat(log["cw_"+ex.id+"_"+si]||"0")).filter(w=>w>0);
+                        const maxW = weights.length ? Math.max(...weights) : null;
+                        const hist = weightHistory[ex.name] || [];
+                        const prevEntries = hist.filter(h => h.date < todayISO());
+                        const lastW = prevEntries.length ? prevEntries[prevEntries.length-1].weight : null;
+                        return (
+                          <div key={ex.id} style={{background:"#0a0f1a",borderRadius:14,padding:"14px",border:"1px solid #f59e0b30"}}>
+                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                              <div style={{flex:1,paddingRight:8}}>
+                                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
+                                  <div style={{fontSize:14,fontWeight:600}}>{ex.name}</div>
+                                  <span style={{fontSize:9,color:"#f59e0b",background:"#f59e0b18",border:"1px solid #f59e0b30",borderRadius:4,padding:"1px 5px",fontFamily:"monospace"}}>CUSTOM</span>
+                                </div>
+                                <div style={{fontSize:11,color:"#4b5563"}}>{ex.equipment || "No equipment"} · {ex.reps} reps</div>
+                              </div>
+                              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                                <div style={{fontSize:11,color:setsDone===ex.sets?"#f59e0b":"#4b5563",fontFamily:"monospace",fontWeight:700}}>{setsDone}/{ex.sets}</div>
+                                <button onClick={() => setActiveWorkout({ isCustom: true, exId: ex.id })}
+                                  style={{padding:"4px 10px",borderRadius:8,border:"none",background:"#f59e0b",color:"#000",cursor:"pointer",fontSize:11,fontWeight:800,fontFamily:"monospace",letterSpacing:0.5}}>
+                                  ▶ START
+                                </button>
+                                <button onClick={() => removeCustomExercise(selDay, ex.id)} style={{width:24,height:24,borderRadius:6,border:"1px solid #1f2937",background:"transparent",color:"#374151",cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
+                              </div>
+                            </div>
+                            <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+                              {Array.from({length:ex.sets}).map((_,si) => {
+                                const done = log["cs_"+ex.id+"_"+si];
+                                const w = log["cw_"+ex.id+"_"+si] || "";
+                                // carry forward: nearest previous set's confirmed weight, fallback to last session
+                                const prevSetW = !w ? Array.from({length:si}).map((_,i) => log["cw_"+ex.id+"_"+(si-1-i)]).find(v => v) : null;
+                                const suggestedW = !w ? (prevSetW || (lastW ? String(lastW) : "")) : "";
+                                const displayW = w || suggestedW;
+                                const isSuggested = !w && !!suggestedW;
+                                const isOpen = weightOpen === "c_"+ex.id+"_"+si;
+                                return (
+                                  <div key={si} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+                                    <button onClick={() => toggleCustomSet(ex.id, si)} style={{width:42,height:42,borderRadius:11,border:"2px solid "+(done?"#f59e0b":"#1f2937"),background:done?"#f59e0b":"#030712",color:done?"#000":"#4b5563",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"monospace",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.15s"}}>
+                                      {done ? <CheckIcon/> : si+1}
+                                    </button>
+                                    <button onClick={() => setWeightOpen(isOpen ? null : "c_"+ex.id+"_"+si)} style={{fontSize:9,fontFamily:"monospace",color:w?"#f59e0b":isSuggested?"#9ca3af":"#374151",background:w?"#f59e0b18":isSuggested?"#1f293780":"#0a0f1a",border:"1px solid "+(w?"#f59e0b40":isSuggested?"#37415180":"#1f2937"),borderRadius:6,padding:"2px 5px",cursor:"pointer",minWidth:36,textAlign:"center",transition:"all 0.15s"}}>
+                                      {displayW ? displayW+"lb" : "+wt"}
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                              <button onClick={() => setTimer(ex.rest)} style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:4,padding:"7px 10px",borderRadius:9,border:"1px solid #1f2937",background:"transparent",color:"#4b5563",cursor:"pointer",fontSize:11,fontFamily:"monospace"}}>
+                                ⏱ {ex.rest}s
+                              </button>
+                            </div>
+                            {weightOpen && weightOpen.startsWith("c_"+ex.id+"_") && (() => {
+                              const si = parseInt(weightOpen.split("_").pop());
+                              const wKey = "cw_"+ex.id+"_"+si;
+                              return (
+                                <div style={{marginTop:10,padding:"10px 12px",background:"#030712",borderRadius:10,border:"1px solid #f59e0b30",display:"flex",alignItems:"center",gap:10}}>
+                                  <span style={{fontSize:11,color:"#4b5563",fontFamily:"monospace",flexShrink:0}}>Set {si+1}:</span>
+                                  <input type="number" placeholder={lastW ? String(lastW) : "lbs"} value={log[wKey]||""} onChange={e => setCustomWeight(ex.id, ex.name, si, e.target.value)}
+                                    style={{flex:1,background:"transparent",border:"none",color:"#f59e0b",fontSize:18,fontWeight:700,fontFamily:"monospace",outline:"none",width:0}} autoFocus/>
+                                  <span style={{fontSize:12,color:"#4b5563"}}>lbs</span>
+                                  {lastW && !log[wKey] && (
+                                    <button onClick={() => { setCustomWeight(ex.id, ex.name, si, String(lastW)); setWeightOpen(null); }} style={{padding:"4px 8px",borderRadius:7,border:"1px solid #374151",background:"#1f2937",color:"#9ca3af",cursor:"pointer",fontSize:11,fontFamily:"monospace",flexShrink:0}}>={lastW}</button>
+                                  )}
+                                  <button onClick={() => setWeightOpen(null)} style={{padding:"4px 10px",borderRadius:7,border:"none",background:"#f59e0b",color:"#000",cursor:"pointer",fontSize:12,fontWeight:700,flexShrink:0}}>OK</button>
+                                </div>
+                              );
+                            })()}
+                            {maxW && lastW && (
+                              <div style={{marginTop:8,fontSize:10,fontFamily:"monospace",color:maxW>lastW?"#22c55e":maxW<lastW?"#ef4444":"#6b7280",textAlign:"right"}}>
+                                {maxW > lastW ? "▲ +" + (maxW-lastW) + "lb PR today!" : maxW < lastW ? "▼ " + (maxW-lastW) + "lb vs last" : "= same as last time"}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Add exercise button */}
+                <button onClick={() => setShowAddExercise(f => !f)} style={{width:"100%",padding:"12px",borderRadius:13,border:"2px dashed "+(showAddExercise?"#f59e0b":"#1f2937"),background:showAddExercise?"#1a110080":"transparent",color:showAddExercise?"#f59e0b":"#4b5563",cursor:"pointer",fontSize:13,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:8,transition:"all 0.2s"}}>
+                  <PlusIcon/>{showAddExercise ? "Cancel" : "Add Exercise"}
+                </button>
+
+                {showAddExercise && (
+                  <div style={{background:"#0a0f1a",borderRadius:14,padding:"16px",marginTop:10,border:"1px solid #f59e0b30"}}>
+                    <div style={{fontSize:10,letterSpacing:3,color:"#f59e0b",fontFamily:"monospace",textTransform:"uppercase",marginBottom:12}}>New Exercise</div>
+                    <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                      <div>
+                        <div style={{fontSize:10,color:"#4b5563",fontFamily:"monospace",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Exercise Name *</div>
+                        <input type="text" placeholder="e.g. Incline Dumbbell Curl" value={newEx.name} onChange={e => setNewEx(n=>({...n,name:e.target.value}))}
+                          style={{width:"100%",background:"#030712",border:"1px solid #1f2937",borderRadius:9,padding:"9px 12px",color:"#f9fafb",fontSize:14,fontFamily:"system-ui",boxSizing:"border-box"}}/>
+                      </div>
+                      <div>
+                        <div style={{fontSize:10,color:"#4b5563",fontFamily:"monospace",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Equipment</div>
+                        <input type="text" placeholder="e.g. Free Weights" value={newEx.equipment} onChange={e => setNewEx(n=>({...n,equipment:e.target.value}))}
+                          style={{width:"100%",background:"#030712",border:"1px solid #1f2937",borderRadius:9,padding:"9px 12px",color:"#f9fafb",fontSize:14,fontFamily:"system-ui",boxSizing:"border-box"}}/>
+                      </div>
+                      <div style={{display:"flex",gap:8}}>
+                        <div style={{flex:1}}>
+                          <div style={{fontSize:10,color:"#4b5563",fontFamily:"monospace",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Sets</div>
+                          <input type="number" min="1" max="10" value={newEx.sets} onChange={e => setNewEx(n=>({...n,sets:e.target.value}))}
+                            style={{width:"100%",background:"#030712",border:"1px solid #1f2937",borderRadius:9,padding:"9px 12px",color:"#f9fafb",fontSize:14,fontFamily:"monospace",boxSizing:"border-box"}}/>
+                        </div>
+                        <div style={{flex:1}}>
+                          <div style={{fontSize:10,color:"#4b5563",fontFamily:"monospace",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Reps</div>
+                          <input type="text" placeholder="10-12" value={newEx.reps} onChange={e => setNewEx(n=>({...n,reps:e.target.value}))}
+                            style={{width:"100%",background:"#030712",border:"1px solid #1f2937",borderRadius:9,padding:"9px 12px",color:"#f9fafb",fontSize:14,fontFamily:"monospace",boxSizing:"border-box"}}/>
+                        </div>
+                        <div style={{flex:1}}>
+                          <div style={{fontSize:10,color:"#4b5563",fontFamily:"monospace",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Rest (s)</div>
+                          <input type="number" placeholder="60" value={newEx.rest} onChange={e => setNewEx(n=>({...n,rest:e.target.value}))}
+                            style={{width:"100%",background:"#030712",border:"1px solid #1f2937",borderRadius:9,padding:"9px 12px",color:"#f9fafb",fontSize:14,fontFamily:"monospace",boxSizing:"border-box"}}/>
+                        </div>
+                      </div>
+                      <button onClick={addCustomExercise} disabled={!newEx.name.trim()} style={{padding:"11px",borderRadius:11,border:"none",background:newEx.name.trim()?"#f59e0b":"#1f2937",color:newEx.name.trim()?"#000":"#4b5563",cursor:newEx.name.trim()?"pointer":"default",fontSize:14,fontWeight:700,transition:"all 0.2s"}}>
+                        Add to {selDay}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+              {prog.cardio && (
+                <div style={{padding:"16px 16px 0"}}>
+                  <div style={{fontSize:10,letterSpacing:3,color:"#374151",textTransform:"uppercase",fontFamily:"monospace",marginBottom:10}}>Cardio</div>
+                  <div style={{background:"#060d1f",borderRadius:14,padding:"14px",border:"1px solid #1e3a5f"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:14,fontWeight:600,color:"#60a5fa",marginBottom:3}}>{prog.cardio.type}</div>
+                        <div style={{fontSize:12,color:"#6b7280",marginBottom:8}}>{prog.cardio.detail}</div>
+                        <div style={{display:"flex",gap:12}}>
+                          <span style={{fontSize:11,color:"#374151",fontFamily:"monospace"}}>⏱ {prog.cardio.duration}</span>
+                          <span style={{fontSize:11,color:"#374151",fontFamily:"monospace"}}>RPE {prog.cardio.rpe}/10</span>
+                        </div>
+                      </div>
+                      <button onClick={toggleCardio} style={{width:42,height:42,borderRadius:11,border:"2px solid "+(log.cardio?"#3b82f6":"#1e3a5f"),background:log.cardio?"#3b82f6":"#060d1f",color:log.cardio?"#fff":"#374151",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.2s",flexShrink:0,marginLeft:12}}>
+                        <CheckIcon/>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ══════════════════════════════════
+          WEEK TAB
+      ══════════════════════════════════ */}
+      {tab === "week" && (
+        <div style={{padding:"20px 16px"}}>
+          <div style={{background:"#0a0f1a",borderRadius:16,padding:"16px",marginBottom:20,border:"1px solid #1f2937",display:"flex",alignItems:"center",gap:16}}>
+            <div style={{flex:1}}>
+              <div style={{fontSize:10,color:"#374151",fontFamily:"monospace",textTransform:"uppercase",letterSpacing:2,marginBottom:6}}>This Week</div>
+              <div style={{height:8,borderRadius:99,background:"#1f2937",overflow:"hidden"}}>
+                <div style={{width:((weekDone()/totalWorkoutDays)*100)+"%",height:"100%",background:"#22c55e",borderRadius:99,transition:"width 0.5s"}}/>
+              </div>
+            </div>
+            <div style={{textAlign:"center"}}>
+              <div style={{fontSize:32,fontWeight:800,fontFamily:"monospace",color:"#22c55e",lineHeight:1}}>{weekDone()}</div>
+              <div style={{fontSize:10,color:"#4b5563",marginTop:2}}>/ {totalWorkoutDays} days</div>
+            </div>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {DAYS.map(d => {
+              const p = PROGRAM[d];
+              const l = workoutLogs[d] || {};
+              const sp = setsProgress(d);
+              const isToday = d === today;
+              return (
+                <div key={d} onClick={() => { setSelDay(d); setTab("today"); }} style={{background:"#0a0f1a",borderRadius:14,padding:"14px 16px",border:"1px solid "+(isToday?(p.color+"40"):"#1f2937"),display:"flex",alignItems:"center",gap:12,cursor:"pointer"}}>
+                  <div style={{width:42,height:42,borderRadius:11,background:p.color+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:p.color,fontFamily:"monospace",flexShrink:0}}>{d.slice(0,3).toUpperCase()}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <span style={{fontSize:14,fontWeight:600}}>{p.label}</span>
+                      <span style={{fontSize:10,fontFamily:"monospace",color:l.done?p.color:isToday?"#f59e0b":"#374151"}}>{l.done?"DONE":isToday?"TODAY":""}</span>
+                    </div>
+                    {p.type !== "rest" && sp.total > 0 && (
+                      <div>
+                        <div style={{height:3,borderRadius:99,background:"#1f2937",overflow:"hidden",marginTop:6}}>
+                          <div style={{width:((sp.done/sp.total)*100)+"%",height:"100%",background:p.color,borderRadius:99}}/>
+                        </div>
+                        <div style={{fontSize:10,color:"#374151",marginTop:3,fontFamily:"monospace"}}>{sp.done}/{sp.total} sets</div>
+                      </div>
+                    )}
+                    {p.type === "rest" && <div style={{fontSize:11,color:"#374151",marginTop:2}}>Recovery day</div>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════
+          PROGRESS TAB
+      ══════════════════════════════════ */}
+      {tab === "progress" && (
+        <div style={{padding:"20px 16px"}}>
+          <div style={{fontSize:10,letterSpacing:3,color:"#374151",textTransform:"uppercase",fontFamily:"monospace",marginBottom:12}}>Exercise Progress</div>
+
+          {/* Exercise selector — built-in + custom */}
+          {(() => {
+            const customFlat = [];
+            DAYS.forEach(d => {
+              (customExercises[d]||[]).forEach(ex => {
+                if (!customFlat.find(e => e.name === ex.name)) {
+                  customFlat.push({ name: ex.name, day: d, color: "#f59e0b", custom: true });
+                }
+              });
+            });
+            const allEx = [...ALL_EXERCISES, ...customFlat];
+            return (
+              <div style={{display:"flex",gap:6,overflowX:"auto",scrollbarWidth:"none",marginBottom:16,paddingBottom:4}}>
+                {allEx.map(ex => (
+                  <button key={ex.name} onClick={() => setSelExercise(ex.name)} style={{flexShrink:0,padding:"7px 12px",borderRadius:20,border:"2px solid "+(selExercise===ex.name?ex.color:"#1f2937"),background:selExercise===ex.name?(ex.color+"18"):"#0a0f1a",color:selExercise===ex.name?ex.color:"#4b5563",cursor:"pointer",fontSize:11,fontWeight:selExercise===ex.name?700:400,whiteSpace:"nowrap",transition:"all 0.2s"}}>
+                    {ex.name.split(" ").slice(0,2).join(" ")}{ex.custom ? " ✦" : ""}
+                  </button>
+                ))}
+              </div>
+            );
+          })()}
+
+          {(() => {
+            const customFlat2 = [];
+            DAYS.forEach(d => { (customExercises[d]||[]).forEach(ex => { if (!customFlat2.find(e=>e.name===ex.name)) customFlat2.push({name:ex.name,day:d,color:"#f59e0b"}); }); });
+            const allEx2 = [...ALL_EXERCISES, ...customFlat2];
+            const exMeta = allEx2.find(e => e.name === selExercise);
+            const hist = weightHistory[selExercise] || [];
+            const color = exMeta?.color || "#22c55e";
+            return (
+              <div>
+                <div style={{background:"#0a0f1a",borderRadius:16,padding:"18px",border:"1px solid "+(color+"30")}}>
+                  <div style={{fontSize:10,letterSpacing:2,color:color,fontFamily:"monospace",textTransform:"uppercase",marginBottom:4}}>{exMeta?.day}</div>
+                  <div style={{fontSize:18,fontWeight:700,marginBottom:2}}>{selExercise}</div>
+
+                  {hist.length === 0 ? (
+                    <div style={{textAlign:"center",padding:"32px 0",color:"#374151"}}>
+                      <div style={{fontSize:32,marginBottom:8}}>🏋️</div>
+                      <div style={{fontSize:13}}>No weight logged yet.</div>
+                      <div style={{fontSize:11,marginTop:4,color:"#1f2937"}}>Log weights in the Today tab to see your progress here.</div>
+                    </div>
+                  ) : (
+                    <div>
+                      {/* Stats row */}
+                      <div style={{display:"flex",gap:8,marginTop:12,marginBottom:4}}>
+                        {[
+                          ["Best", Math.max(...hist.map(h=>h.weight)) + " lbs", color],
+                          ["Last", hist[hist.length-1].weight + " lbs", "#94a3b8"],
+                          ["Sessions", hist.length, "#6b7280"]
+                        ].map(([label, val, c]) => (
+                          <div key={label} style={{flex:1,background:"#030712",borderRadius:10,padding:"10px 8px",textAlign:"center",border:"1px solid #1f2937"}}>
+                            <div style={{fontSize:16,fontWeight:800,fontFamily:"monospace",color:c}}>{val}</div>
+                            <div style={{fontSize:9,color:"#374151",marginTop:2,textTransform:"uppercase",letterSpacing:1}}>{label}</div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {hist.length >= 2 ? (
+                        <WeightChart history={hist} color={color}/>
+                      ) : (
+                        <div style={{textAlign:"center",padding:"16px 0",fontSize:12,color:"#374151"}}>Log 2+ sessions to see the chart.</div>
+                      )}
+
+                      {/* History list */}
+                      <div style={{marginTop:14}}>
+                        <div style={{fontSize:10,letterSpacing:2,color:"#374151",fontFamily:"monospace",textTransform:"uppercase",marginBottom:8}}>History</div>
+                        <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                          {[...hist].reverse().map((h, i, arr) => {
+                            const prev = arr[i+1];
+                            const diff = prev ? h.weight - prev.weight : null;
+                            return (
+                              <div key={h.date} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"9px 12px",background:"#030712",borderRadius:10,border:"1px solid #1f2937"}}>
+                                <span style={{fontSize:11,color:"#6b7280",fontFamily:"monospace"}}>{h.date}</span>
+                                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                                  {diff !== null && (
+                                    <span style={{fontSize:10,fontFamily:"monospace",color:diff>0?"#22c55e":diff<0?"#ef4444":"#374151"}}>
+                                      {diff>0?"+":""}{diff} lb
+                                    </span>
+                                  )}
+                                  <span style={{fontSize:15,fontWeight:700,fontFamily:"monospace",color:color}}>{h.weight} lbs</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* ══════════════════════════════════
+          MILE LOG TAB
+      ══════════════════════════════════ */}
+      {tab === "mile" && (
+        <div style={{padding:"20px 16px"}}>
+          <div style={{background:"linear-gradient(135deg,#0c1a2e,#060d1f)",borderRadius:18,padding:"20px",marginBottom:16,border:"1px solid #1e3a5f",position:"relative",overflow:"hidden"}}>
+            <div style={{position:"absolute",right:16,top:8,fontSize:64,opacity:0.06,userSelect:"none"}}>🏃</div>
+            <div style={{fontSize:10,letterSpacing:3,color:"#3b82f6",fontFamily:"monospace",textTransform:"uppercase",marginBottom:4}}>2025 Goal</div>
+            <div style={{fontSize:40,fontWeight:800,fontFamily:"monospace",color:"#93c5fd",letterSpacing:-1}}>5:59</div>
+            <div style={{fontSize:12,color:"#4b7099",marginTop:2}}>Sub-6:00 Mile</div>
+            {mileLog.length > 0 && (() => {
+              const best = Math.min(...mileLog.map(m => parseTime(m.time)));
+              const diff = best - 360;
+              const pct = Math.min(100, Math.max(0, 100 - diff * 2));
+              return (
+                <div style={{marginTop:14}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                    <span style={{fontSize:10,color:"#374151",fontFamily:"monospace"}}>Best: {fmtTime(best)}</span>
+                    <span style={{fontSize:10,color:diff<=0?"#22c55e":"#3b82f6",fontFamily:"monospace"}}>{diff<=0?"GOAL MET!":(fmtTime(Math.abs(diff))+" to go")}</span>
+                  </div>
+                  <div style={{height:6,borderRadius:99,background:"#0f172a",overflow:"hidden"}}>
+                    <div style={{width:pct+"%",height:"100%",background:"linear-gradient(90deg,#3b82f6,#22c55e)",borderRadius:99,transition:"width 0.5s"}}/>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+          <button onClick={() => setShowMileForm(f => !f)} style={{width:"100%",padding:"13px",borderRadius:13,border:"2px dashed "+(showMileForm?"#3b82f6":"#1f2937"),background:showMileForm?"#060d1f":"transparent",color:showMileForm?"#60a5fa":"#4b5563",cursor:"pointer",fontSize:14,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:14,transition:"all 0.2s"}}>
+            <PlusIcon/>{showMileForm ? "Cancel" : "Log a Mile Run"}
+          </button>
+
+          {showMileForm && (
+            <div style={{background:"#0a0f1a",borderRadius:16,padding:"18px",marginBottom:16,border:"1px solid #1e3a5f"}}>
+              <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                <div>
+                  <div style={{fontSize:10,color:"#374151",fontFamily:"monospace",marginBottom:5,textTransform:"uppercase",letterSpacing:2}}>Date</div>
+                  <input type="date" value={mileInput.date} onChange={e => setMileInput(i=>({...i,date:e.target.value}))} style={inputStyle}/>
+                </div>
+                <div>
+                  <div style={{fontSize:10,color:"#374151",fontFamily:"monospace",marginBottom:5,textTransform:"uppercase",letterSpacing:2}}>Time (M:SS)</div>
+                  <input type="text" placeholder="6:30" value={mileInput.time} onChange={e => setMileInput(i=>({...i,time:e.target.value}))} style={{...inputStyle,fontSize:28,fontWeight:800,letterSpacing:2}}/>
+                </div>
+                <div>
+                  <div style={{fontSize:10,color:"#374151",fontFamily:"monospace",marginBottom:5,textTransform:"uppercase",letterSpacing:2}}>Notes</div>
+                  <input type="text" placeholder="Outside loop, felt strong..." value={mileInput.notes} onChange={e => setMileInput(i=>({...i,notes:e.target.value}))} style={{...inputStyle,fontFamily:"system-ui"}}/>
+                </div>
+                <button onClick={addMile} style={{padding:"12px",borderRadius:11,border:"none",background:"#3b82f6",color:"#fff",cursor:"pointer",fontSize:14,fontWeight:700}}>Save Run</button>
+              </div>
+            </div>
+          )}
+
+          {mileLog.length >= 2 && (() => {
+            const sorted = [...mileLog].sort((a,b) => a.date.localeCompare(b.date));
+            const times = sorted.map(m => parseTime(m.time));
+            const minT = Math.min(...times) - 20;
+            const maxT = Math.max(...times) + 20;
+            const W = 340, H = 100;
+            const pts = times.map((t,i) => ({
+              x: 20 + (i/(times.length-1))*(W-40),
+              y: H - 14 - ((t-minT)/(maxT-minT))*(H-28)
+            }));
+            const pathD = pts.map((p,i) => (i===0?"M":"L")+p.x.toFixed(1)+","+p.y.toFixed(1)).join(" ");
+            const areaD = pathD + " L"+pts[pts.length-1].x.toFixed(1)+","+(H-14)+" L"+pts[0].x.toFixed(1)+","+(H-14)+" Z";
+            const goalY = H - 14 - ((360-minT)/(maxT-minT))*(H-28);
+            return (
+              <div style={{background:"#0a0f1a",borderRadius:14,padding:"14px",marginBottom:14,border:"1px solid #1f2937"}}>
+                <div style={{fontSize:10,letterSpacing:3,color:"#374151",fontFamily:"monospace",textTransform:"uppercase",marginBottom:8}}>Progress Chart</div>
+                <svg viewBox={"0 0 "+W+" "+H} style={{width:"100%",height:100}}>
+                  <defs>
+                    <linearGradient id="milearea" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.2"/>
+                      <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.02"/>
+                    </linearGradient>
+                    <linearGradient id="mileline" x1="0" x2="1" y1="0" y2="0">
+                      <stop offset="0%" stopColor="#3b82f6"/>
+                      <stop offset="100%" stopColor="#22c55e"/>
+                    </linearGradient>
+                  </defs>
+                  {goalY > 4 && goalY < H && <g>
+                    <line x1="20" y1={goalY} x2={W-20} y2={goalY} stroke="#ef444440" strokeWidth="1.5" strokeDasharray="4 3"/>
+                    <text x={W-18} y={goalY-3} fill="#ef4444" fontSize="8" fontFamily="monospace" textAnchor="end">6:00</text>
+                  </g>}
+                  <path d={areaD} fill="url(#milearea)"/>
+                  <path d={pathD} fill="none" stroke="url(#mileline)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  {pts.map((p,i) => (
+                    <g key={i}>
+                      <circle cx={p.x} cy={p.y} r="4" fill="#030712" stroke="url(#mileline)" strokeWidth="2"/>
+                      <text x={p.x} y={H-1} fill="#374151" fontSize="7" fontFamily="monospace" textAnchor="middle">{sorted[i].date.slice(5)}</text>
+                      <text x={p.x} y={p.y-7} fill="#93c5fd" fontSize="8" fontFamily="monospace" fontWeight="700" textAnchor="middle">{sorted[i].time}</text>
+                    </g>
+                  ))}
+                </svg>
+              </div>
+            );
+          })()}
+
+          {mileLog.length === 0 ? (
+            <div style={{textAlign:"center",padding:"48px 0"}}>
+              <div style={{fontSize:44,marginBottom:10}}>🏁</div>
+              <div style={{fontSize:14,color:"#374151"}}>No runs logged yet. Hit the road!</div>
+            </div>
+          ) : (
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {[...mileLog].sort((a,b) => b.date.localeCompare(a.date)).map(m => {
+                const secs = parseTime(m.time);
+                const under6 = secs < 360;
+                const diff = secs - 360;
+                return (
+                  <div key={m.id} style={{background:"#0a0f1a",borderRadius:13,padding:"13px 14px",border:"1px solid "+(under6?"#22c55e30":"#1f2937"),display:"flex",alignItems:"center",gap:12}}>
+                    <div style={{minWidth:56,textAlign:"center"}}>
+                      <div style={{fontSize:20,fontWeight:800,fontFamily:"monospace",color:under6?"#22c55e":diff<30?"#f59e0b":"#f9fafb"}}>{m.time}</div>
+                      <div style={{fontSize:9,fontFamily:"monospace",color:under6?"#22c55e":diff<30?"#f59e0b":"#374151",marginTop:1}}>{under6?"SUB-6!":diff<30?"SO CLOSE":""}</div>
+                    </div>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:11,color:"#4b5563",fontFamily:"monospace"}}>{m.date}</div>
+                      {m.notes && <div style={{fontSize:12,color:"#9ca3af",marginTop:2}}>{m.notes}</div>}
+                    </div>
+                    <button onClick={() => setMileLog(prev => prev.filter(x => x.id !== m.id))} style={{width:30,height:30,borderRadius:8,border:"1px solid #1f2937",background:"transparent",color:"#374151",cursor:"pointer",fontSize:18,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>x</button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Bottom nav */}
+      <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:"#030712",borderTop:"1px solid #0f172a",display:"flex",zIndex:50}}>
+        {TABS.map(([k,ic,l]) => (
+          <button key={k} onClick={() => setTab(k)} style={{flex:1,padding:"10px 0 12px",border:"none",background:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,color:tab===k?"#22c55e":"#374151",transition:"color 0.2s"}}>
+            <span style={{fontSize:18}}>{ic}</span>
+            <span style={{fontSize:9,fontFamily:"monospace",letterSpacing:1,textTransform:"uppercase"}}>{l}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
