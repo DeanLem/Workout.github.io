@@ -1,33 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Training HQ" />
-  <title>Training HQ</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; background: #030712; color: #f9fafb; }
-    body { -webkit-text-size-adjust: 100%; }
-    input, button { font-family: inherit; }
-    /* hide scrollbars */
-    ::-webkit-scrollbar { display: none; }
-    * { scrollbar-width: none; }
-  </style>
-</head>
-<body>
-  <div id="root"></div>
-
-  <!-- React + ReactDOM + Babel from CDN -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <script type="text/babel">
-const { useState, useEffect } = React;
-
+import { useState, useEffect } from "react";
 
 const DEFAULT_PROGRAM = {
   Monday: {
@@ -448,8 +419,8 @@ function WorkoutMode({ exercise, color, lastWeight, onComplete, onClose, onWeigh
 
 
 // ── EDIT DAY SCREEN ───────────────────────────────────────────────────────────
-function EditDayScreen({ day, program, onSave, onClose }) {
-  const orig = program[day];
+function EditDayScreen({ day, program, onSave, onClose, isLibrary = false }) {
+  const orig = program[day] || {label:"New Workout", subtitle:"", type:"lift", color:"#22c55e", exercises:[], cardio:null};
   const [label, setLabel] = useState(orig.label);
   const [subtitle, setSubtitle] = useState(orig.subtitle);
   const [color, setColor] = useState(orig.color);
@@ -489,20 +460,17 @@ function EditDayScreen({ day, program, onSave, onClose }) {
   }
 
   return (
-    <div style={{position:"fixed",inset:0,background:"#030712",zIndex:300,overflowY:"auto",maxWidth:480,margin:"0 auto"}}>
-      {/* Header */}
-      <div style={{position:"sticky",top:0,background:"#030712",borderBottom:"1px solid #1f2937",padding:"16px 16px 12px",zIndex:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+    <div style={{position:"fixed",inset:0,background:"#030712",zIndex:300,display:"flex",flexDirection:"column",maxWidth:480,margin:"0 auto"}}>
+      {/* Header - just title, no buttons */}
+      <div style={{background:"#030712",borderBottom:"1px solid #1f2937",padding:"16px 16px 12px",display:"flex",alignItems:"center",gap:12,flexShrink:0}}>
         <div>
-          <div style={{fontSize:10,letterSpacing:3,color:"#4b5563",fontFamily:"monospace",textTransform:"uppercase"}}>Editing</div>
-          <div style={{fontSize:18,fontWeight:800}}>{day}</div>
-        </div>
-        <div style={{display:"flex",gap:8}}>
-          <button onClick={onClose} style={{padding:"8px 14px",borderRadius:10,border:"1px solid #374151",background:"#0f172a",color:"#6b7280",cursor:"pointer",fontSize:12}}>Cancel</button>
-          <button onClick={handleSave} style={{padding:"8px 16px",borderRadius:10,border:"none",background:color,color:"#000",cursor:"pointer",fontSize:12,fontWeight:700}}>Save</button>
+          <div style={{fontSize:10,letterSpacing:3,color:"#4b5563",fontFamily:"monospace",textTransform:"uppercase"}}>{isLibrary ? "New Workout" : "Editing"}</div>
+          <div style={{fontSize:18,fontWeight:800}}>{isLibrary ? "Workout Library" : day}</div>
         </div>
       </div>
 
-      <div style={{padding:"16px"}}>
+      {/* Scrollable content */}
+      <div style={{flex:1,overflowY:"auto",padding:"16px",paddingBottom:80}}>
         {/* Day info */}
         <div style={{background:"#0a0f1a",borderRadius:14,padding:"14px",marginBottom:12,border:"1px solid #1f2937"}}>
           <div style={{fontSize:10,letterSpacing:3,color:"#4b5563",fontFamily:"monospace",textTransform:"uppercase",marginBottom:10}}>Day Info</div>
@@ -585,12 +553,33 @@ function EditDayScreen({ day, program, onSave, onClose }) {
             {editingEx === "new" ? (
               <div style={{marginTop:8,background:"#030712",borderRadius:10,padding:"12px",border:"1px solid #f59e0b40"}}>
                 <div style={{fontSize:10,color:"#f59e0b",fontFamily:"monospace",textTransform:"uppercase",letterSpacing:2,marginBottom:8}}>New Exercise</div>
-                {[["Name *","name","text"],["Equipment","equipment","text"]].map(([l,k,t]) => (
-                  <div key={k} style={{marginBottom:6}}>
-                    <div style={{fontSize:10,color:"#6b7280"}}>{l}</div>
-                    <input type={t} value={newEx[k]} onChange={e => setNewEx(n=>({...n,[k]:e.target.value}))} style={iStyle}/>
-                  </div>
-                ))}
+                {/* Exercise name with search/autocomplete */}
+                <div style={{marginBottom:6,position:"relative"}}>
+                  <div style={{fontSize:10,color:"#6b7280",marginBottom:4}}>Exercise Name *</div>
+                  <input type="text" value={newEx.name} onChange={e => setNewEx(n=>({...n,name:e.target.value}))} style={iStyle} placeholder="Search or type new..."/>
+                  {/* Suggestions from existing exercises */}
+                  {newEx.name.length >= 2 && (() => {
+                    const allEx = [];
+                    Object.values(program).forEach(d => d.exercises?.forEach(e => { if (!allEx.find(x=>x.name===e.name)) allEx.push(e); }));
+                    const matches = allEx.filter(e => e.name.toLowerCase().includes(newEx.name.toLowerCase()) && e.name.toLowerCase() !== newEx.name.toLowerCase());
+                    if (!matches.length) return null;
+                    return (
+                      <div style={{position:"absolute",left:0,right:0,top:"100%",background:"#1f2937",borderRadius:"0 0 8px 8px",border:"1px solid #374151",borderTop:"none",zIndex:20,maxHeight:160,overflowY:"auto"}}>
+                        {matches.slice(0,6).map(e => (
+                          <button key={e.name} onClick={() => setNewEx(n=>({...n,name:e.name,equipment:e.equipment||n.equipment,sets:String(e.sets||n.sets),reps:e.reps||n.reps,rest:String(e.rest||n.rest)}))}
+                            style={{width:"100%",padding:"9px 12px",background:"none",border:"none",color:"#f9fafb",cursor:"pointer",textAlign:"left",fontSize:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                            <span>{e.name}</span>
+                            <span style={{fontSize:10,color:"#4b5563",fontFamily:"monospace"}}>{e.sets}×{e.reps}</span>
+                          </button>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+                <div style={{marginBottom:6}}>
+                  <div style={{fontSize:10,color:"#6b7280",marginBottom:4}}>Equipment</div>
+                  <input type="text" value={newEx.equipment} onChange={e => setNewEx(n=>({...n,equipment:e.target.value}))} style={iStyle}/>
+                </div>
                 <div style={{marginBottom:6}}>
                   <div style={{fontSize:10,color:"#6b7280",marginBottom:4}}>Type</div>
                   <div style={{display:"flex",gap:6}}>
@@ -652,17 +641,62 @@ function EditDayScreen({ day, program, onSave, onClose }) {
           </div>
         )}
       </div>
+      </div>
+
+      {/* Bottom bar with Cancel/Save - always visible */}
+      <div style={{flexShrink:0,background:"#030712",borderTop:"1px solid #1f2937",padding:"12px 16px",display:"flex",gap:10}}>
+        <button onClick={onClose} style={{flex:1,padding:"14px",borderRadius:12,border:"1px solid #374151",background:"#0f172a",color:"#9ca3af",cursor:"pointer",fontSize:14,fontWeight:600}}>Cancel</button>
+        <button onClick={handleSave} style={{flex:2,padding:"14px",borderRadius:12,border:"none",background:color,color:"#000",cursor:"pointer",fontSize:14,fontWeight:800}}>Save</button>
+      </div>
     </div>
   );
 }
 
 // ── EDIT TAB ──────────────────────────────────────────────────────────────────
-function EditTab({ program, onEditDay }) {
+function EditTab({ program, onEditDay, onAddWorkout, onAssignWorkout, savedWorkouts, onDeleteWorkout }) {
+  const [showLibrary, setShowLibrary] = useState(false);
+  const [assigningWorkout, setAssigningWorkout] = useState(null); // workout id being assigned
+  const [assignDay, setAssignDay] = useState("Monday");
+
+  function handleAssign() {
+    if (!assigningWorkout) return;
+    onAssignWorkout(assignDay, assigningWorkout);
+    setAssigningWorkout(null);
+  }
+
   return (
-    <div style={{padding:"20px 16px"}}>
+    <div style={{padding:"20px 16px 80px"}}>
+      {/* Assign workout modal */}
+      {assigningWorkout && (() => {
+        const wk = savedWorkouts.find(w => w.id === assigningWorkout);
+        return (
+          <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:400,display:"flex",alignItems:"flex-end",maxWidth:480,margin:"0 auto"}}>
+            <div style={{width:"100%",background:"#0f172a",borderRadius:"20px 20px 0 0",padding:"24px 20px 40px",border:"1px solid #1f2937"}}>
+              <div style={{fontSize:11,letterSpacing:3,color:"#22c55e",fontFamily:"monospace",textTransform:"uppercase",marginBottom:4}}>Assign Workout</div>
+              <div style={{fontSize:18,fontWeight:800,marginBottom:16}}>{wk?.label}</div>
+              <div style={{fontSize:11,color:"#6b7280",marginBottom:8}}>Assign to day:</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:20}}>
+                {DAYS.map(d => (
+                  <button key={d} onClick={() => setAssignDay(d)}
+                    style={{padding:"8px 14px",borderRadius:10,border:"2px solid "+(assignDay===d?"#22c55e":"#374151"),background:assignDay===d?"#22c55e18":"#030712",color:assignDay===d?"#22c55e":"#6b7280",cursor:"pointer",fontSize:12,fontWeight:assignDay===d?700:400}}>
+                    {d.slice(0,3)}
+                  </button>
+                ))}
+              </div>
+              <div style={{display:"flex",gap:10}}>
+                <button onClick={() => setAssigningWorkout(null)} style={{flex:1,padding:"13px",borderRadius:12,border:"1px solid #374151",background:"transparent",color:"#6b7280",cursor:"pointer",fontSize:14}}>Cancel</button>
+                <button onClick={handleAssign} style={{flex:2,padding:"13px",borderRadius:12,border:"none",background:"#22c55e",color:"#000",cursor:"pointer",fontSize:14,fontWeight:800}}>Assign to {assignDay.slice(0,3)}</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       <div style={{fontSize:10,letterSpacing:3,color:"#374151",textTransform:"uppercase",fontFamily:"monospace",marginBottom:4}}>Program Editor</div>
-      <div style={{fontSize:12,color:"#4b5563",marginBottom:16}}>Tap a day to edit its label, exercises, and cardio.</div>
-      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+      <div style={{fontSize:12,color:"#4b5563",marginBottom:16}}>Tap a day to edit. Assign saved workouts from the library.</div>
+
+      {/* Day list */}
+      <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>
         {DAYS.map(d => {
           const p = program[d];
           return (
@@ -679,17 +713,91 @@ function EditTab({ program, onEditDay }) {
           );
         })}
       </div>
+
+      {/* Workout Library */}
+      <div style={{marginBottom:12}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <div style={{fontSize:10,letterSpacing:3,color:"#374151",textTransform:"uppercase",fontFamily:"monospace"}}>Workout Library</div>
+          <button onClick={() => setShowLibrary(f => !f)} style={{fontSize:11,color:"#22c55e",background:"none",border:"none",cursor:"pointer",fontFamily:"monospace"}}>
+            {showLibrary ? "hide" : "show"}
+          </button>
+        </div>
+        {showLibrary && (
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {savedWorkouts.length === 0 && (
+              <div style={{textAlign:"center",padding:"24px",color:"#374151",fontSize:13}}>No saved workouts yet. Create one below.</div>
+            )}
+            {savedWorkouts.map(wk => (
+              <div key={wk.id} style={{background:"#0a0f1a",borderRadius:14,padding:"14px 16px",border:"1px solid #1f2937",display:"flex",alignItems:"center",gap:12}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:14,fontWeight:700}}>{wk.label}</div>
+                  <div style={{fontSize:11,color:"#4b5563",marginTop:1}}>{wk.subtitle}</div>
+                  <div style={{fontSize:10,color:"#374151",fontFamily:"monospace",marginTop:2}}>{wk.exercises.length} exercises</div>
+                </div>
+                <div style={{display:"flex",gap:6,flexShrink:0}}>
+                  <button onClick={() => { setAssigningWorkout(wk.id); setAssignDay("Monday"); }}
+                    style={{padding:"6px 12px",borderRadius:8,border:"none",background:"#22c55e",color:"#000",cursor:"pointer",fontSize:11,fontWeight:700}}>
+                    Assign
+                  </button>
+                  <button onClick={() => onDeleteWorkout(wk.id)}
+                    style={{width:30,height:30,borderRadius:8,border:"1px solid #ef444440",background:"transparent",color:"#ef4444",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                    ×
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Create new workout button */}
+      <button onClick={onAddWorkout}
+        style={{width:"100%",padding:"14px",borderRadius:13,border:"2px dashed #22c55e",background:"#22c55e08",color:"#22c55e",cursor:"pointer",fontSize:14,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+        <PlusIcon/> Create New Workout
+      </button>
     </div>
   );
 }
 
 // ── MAIN APP ──────────────────────────────────────────────────────────────────
-function App() {
+export default function App() {
   const [tab, setTab] = useState("today");
   const [selDay, setSelDay] = useState(getTodayName);
   const [timer, setTimer] = useState(null);
   const [activeWorkout, setActiveWorkout] = useState(null);
   const [editingDay, setEditingDay] = useState(null);
+  const [creatingWorkout, setCreatingWorkout] = useState(false); // creating a new saved workout
+
+  // savedWorkouts: library of named workouts not tied to a day
+  const [savedWorkouts, setSavedWorkoutsRaw] = useState(() => load("dht_savedWorkouts", []));
+  function setSavedWorkouts(fn) {
+    setSavedWorkoutsRaw(prev => {
+      const next = typeof fn === "function" ? fn(prev) : fn;
+      try { localStorage.setItem("dht_savedWorkouts", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }
+  function addSavedWorkout(workout) {
+    setSavedWorkouts(prev => [...prev, { ...workout, id: uid() }]);
+  }
+  function deleteSavedWorkout(id) {
+    setSavedWorkouts(prev => prev.filter(w => w.id !== id));
+  }
+  function assignWorkoutToDay(day, workoutId) {
+    const wk = savedWorkouts.find(w => w.id === workoutId);
+    if (!wk) return;
+    setProgram(prev => ({
+      ...prev,
+      [day]: {
+        ...prev[day],
+        label: wk.label,
+        subtitle: wk.subtitle,
+        exercises: wk.exercises.map(e => ({...e, id: uid()})),
+        cardio: wk.cardio ? {...wk.cardio} : prev[day].cardio,
+        type: wk.type || "lift",
+      }
+    }));
+  }
 
   function load(key, fallback) {
     try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
@@ -737,13 +845,49 @@ function App() {
   }
 
   const [weightOpen, setWeightOpen] = useState(null);
+  const [sessionOrder, setSessionOrder] = useState(null);
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [quickEx, setQuickEx] = useState({ name:"", equipment:"", sets:"3", reps:"10-12", rest:"60" });
+  const [sessionExtras, setSessionExtras] = useState([]);
   const [selExercise, setSelExercise] = useState("");
+  const [exSearch, setExSearch] = useState("");      // progress tab search
+  const [newExSearch, setNewExSearch] = useState(""); // add-exercise search
+  const [quickExSearch, setQuickExSearch] = useState(""); // quick-add search
   const [showMileForm, setShowMileForm] = useState(false);
   const [mileInput, setMileInput] = useState({ date: todayISO(), time: "", notes: "" });
 
   const today = getTodayName();
   const prog = program[selDay];
   const log = workoutLogs[selDay] || {};
+  // Session exercise list: program exercises (possibly reordered) + quick-adds
+  const sessionExercises = (() => {
+    const base = prog.exercises || [];
+    const ordered = sessionOrder ? sessionOrder.map(id => base.find(e => e.id === id)).filter(Boolean) : base;
+    return [...ordered, ...sessionExtras];
+  })();
+  function moveSessionEx(idx, dir) {
+    const base = prog.exercises || [];
+    const currentOrder = sessionOrder ? sessionOrder.map(id => base.find(e => e.id === id)).filter(Boolean) : base;
+    const fullList = [...currentOrder, ...sessionExtras];
+    const newList = [...fullList];
+    const j = idx + dir;
+    if (j < 0 || j >= newList.length) return;
+    [newList[idx], newList[j]] = [newList[j], newList[idx]];
+    // Split back into base order and extras
+    const newBase = newList.filter(e => !e._extra);
+    const newExtras = newList.filter(e => e._extra);
+    setSessionOrder(newBase.map(e => e.id));
+    setSessionExtras(newExtras);
+  }
+  function addQuickExercise() {
+    if (!quickEx.name.trim()) return;
+    setSessionExtras(prev => [...prev, {
+      ...quickEx, sets: parseInt(quickEx.sets)||3, rest: parseInt(quickEx.rest)||60,
+      id: uid(), _extra: true
+    }]);
+    setQuickEx({ name:"", equipment:"", sets:"3", reps:"10-12", rest:"60" });
+    setShowQuickAdd(false);
+  }
 
   // Build flat exercise list for progress tab from current program
   const ALL_EXERCISES = [];
@@ -827,9 +971,19 @@ function App() {
         />
       )}
 
+      {creatingWorkout && (
+        <EditDayScreen
+          day={null}
+          program={{null: {label:"New Workout", subtitle:"", type:"lift", color:"#22c55e", exercises:[], cardio:null}}}
+          onSave={(_, data) => { addSavedWorkout(data); setCreatingWorkout(false); }}
+          onClose={() => setCreatingWorkout(false)}
+          isLibrary={true}
+        />
+      )}
+
       {activeWorkout && (() => {
         const { exId } = activeWorkout;
-        const ex = prog.exercises.find(e => e.id === exId);
+        const ex = sessionExercises.find(e => e.id === exId);
         if (!ex) return null;
         const hist = weightHistory[ex.name] || [];
         const prevEntries = hist.filter(h => h.date < todayISO());
@@ -881,7 +1035,7 @@ function App() {
               const isSel = d === selDay;
               const sp = setsProgress(d);
               return (
-                <button key={d} onClick={() => { setSelDay(d); setWeightOpen(null); }} style={{flexShrink:0,borderRadius:12,border:"2px solid "+(isSel?p.color:"#1f2937"),background:isSel?(p.color+"15"):"#0a0f1a",padding:"8px 12px",cursor:"pointer",minWidth:64,textAlign:"center",transition:"all 0.2s"}}>
+                <button key={d} onClick={() => { setSelDay(d); setWeightOpen(null); setSessionOrder(null); setSessionExtras([]); setShowQuickAdd(false); }} style={{flexShrink:0,borderRadius:12,border:"2px solid "+(isSel?p.color:"#1f2937"),background:isSel?(p.color+"15"):"#0a0f1a",padding:"8px 12px",cursor:"pointer",minWidth:64,textAlign:"center",transition:"all 0.2s"}}>
                   <div style={{fontSize:10,fontWeight:700,color:isSel?p.color:"#4b5563",fontFamily:"monospace",letterSpacing:1}}>{d===today?"* ":""}{d.slice(0,3).toUpperCase()}</div>
                   <div style={{fontSize:10,color:isSel?"#e5e7eb":"#374151",marginTop:2}}>{p.label.split(" ")[0]}</div>
                   {p.type !== "rest" && sp.total > 0 && (
@@ -924,7 +1078,7 @@ function App() {
               <div style={{padding:"0 16px"}}>
                 <div style={{fontSize:10,letterSpacing:3,color:"#374151",textTransform:"uppercase",fontFamily:"monospace",marginBottom:10}}>Exercises</div>
                 <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                  {prog.exercises.map((ex) => {
+                  {sessionExercises.map((ex, exListIdx) => {
                     const setsDone = Array.from({length:ex.sets}).filter((_,si) => log["s_"+ex.id+"_"+si]).length;
                     const weights = Array.from({length:ex.sets}).map((_,si) => parseFloat(log["w_"+ex.id+"_"+si]||"0")).filter(w=>w>0);
                     const maxW = weights.length ? Math.max(...weights) : null;
@@ -934,15 +1088,21 @@ function App() {
                     return (
                       <div key={ex.id} style={{background:"#0a0f1a",borderRadius:14,padding:"14px",border:"1px solid #1f2937"}}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                          <div style={{display:"flex",flexDirection:"column",gap:3,marginRight:6,flexShrink:0}}>
+                            <button onClick={e => { e.stopPropagation(); moveSessionEx(exListIdx,-1); }} disabled={exListIdx===0}
+                              style={{width:22,height:22,borderRadius:5,border:"1px solid #1f2937",background:"transparent",color:exListIdx===0?"#1f2937":"#6b7280",cursor:exListIdx===0?"default":"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10}}>▲</button>
+                            <button onClick={e => { e.stopPropagation(); moveSessionEx(exListIdx,1); }} disabled={exListIdx===sessionExercises.length-1}
+                              style={{width:22,height:22,borderRadius:5,border:"1px solid #1f2937",background:"transparent",color:exListIdx===sessionExercises.length-1?"#1f2937":"#6b7280",cursor:exListIdx===sessionExercises.length-1?"default":"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10}}>▼</button>
+                          </div>
                           <div style={{flex:1,paddingRight:8}}>
-                            <div style={{fontSize:14,fontWeight:600,marginBottom:2}}>{ex.name}</div>
+                            <div style={{fontSize:14,fontWeight:600,marginBottom:2}}>{ex.name}{ex._extra && <span style={{fontSize:9,color:"#f59e0b",background:"#f59e0b18",border:"1px solid #f59e0b30",borderRadius:4,padding:"1px 4px",marginLeft:6,fontFamily:"monospace"}}>TODAY</span>}</div>
                             <div style={{fontSize:11,color:"#4b5563"}}>{ex.equipment} · {ex.timed ? (ex.duration||30)+"s hold" : ex.reps+" reps"}</div>
                           </div>
                           <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2}}>
                             <div style={{fontSize:11,color:setsDone===ex.sets?prog.color:"#4b5563",fontFamily:"monospace",fontWeight:700}}>{setsDone}/{ex.sets}</div>
                             {lastW && <div style={{fontSize:10,color:"#374151",fontFamily:"monospace"}}>last: {lastW}lb</div>}
                             <button onClick={() => setActiveWorkout({ exId: ex.id })}
-                              style={{marginTop:4,padding:"4px 10px",borderRadius:8,border:"none",background:prog.color,color:"#000",cursor:"pointer",fontSize:11,fontWeight:800,fontFamily:"monospace"}}>
+                              style={{marginTop:4,padding:"4px 10px",borderRadius:8,border:"none",background:ex._extra?"#f59e0b":prog.color,color:"#000",cursor:"pointer",fontSize:11,fontWeight:800,fontFamily:"monospace"}}>
                               ▶ START
                             </button>
                           </div>
@@ -997,6 +1157,58 @@ function App() {
                     );
                   })}
                 </div>
+              </div>
+
+              {/* Quick Add Exercise for today's session */}
+              <div style={{padding:"12px 16px 0"}}>
+                {showQuickAdd ? (
+                  <div style={{background:"#0a0f1a",borderRadius:14,padding:"14px",border:"2px solid #f59e0b40"}}>
+                    <div style={{fontSize:10,letterSpacing:3,color:"#f59e0b",fontFamily:"monospace",textTransform:"uppercase",marginBottom:10}}>Add to Today Only</div>
+                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                      <div style={{position:"relative"}}>
+                        <input type="text" placeholder="Search or type new exercise..." value={quickEx.name} onChange={e => setQuickEx(q=>({...q,name:e.target.value}))}
+                          style={{width:"100%",background:"#030712",border:"1px solid #374151",borderRadius:8,padding:"9px 12px",color:"#f9fafb",fontSize:14,boxSizing:"border-box"}}/>
+                        {quickEx.name.length >= 2 && (() => {
+                          const allEx = [];
+                          Object.values(program).forEach(d => d.exercises?.forEach(e => { if (!allEx.find(x=>x.name===e.name)) allEx.push(e); }));
+                          const matches = allEx.filter(e => e.name.toLowerCase().includes(quickEx.name.toLowerCase()) && e.name.toLowerCase() !== quickEx.name.toLowerCase());
+                          if (!matches.length) return null;
+                          return (
+                            <div style={{position:"absolute",left:0,right:0,top:"100%",background:"#1f2937",borderRadius:"0 0 8px 8px",border:"1px solid #374151",borderTop:"none",zIndex:20,maxHeight:160,overflowY:"auto"}}>
+                              {matches.slice(0,6).map(e => (
+                                <button key={e.name} onClick={() => setQuickEx(q=>({...q,name:e.name,equipment:e.equipment||q.equipment,sets:String(e.sets||q.sets),reps:e.reps||q.reps,rest:String(e.rest||q.rest)}))}
+                                  style={{width:"100%",padding:"9px 12px",background:"none",border:"none",color:"#f9fafb",cursor:"pointer",textAlign:"left",fontSize:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                                  <span>{e.name}</span>
+                                  <span style={{fontSize:10,color:"#4b5563",fontFamily:"monospace"}}>{e.sets}×{e.reps}</span>
+                                </button>
+                              ))}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                      <input type="text" placeholder="Equipment" value={quickEx.equipment} onChange={e => setQuickEx(q=>({...q,equipment:e.target.value}))}
+                        style={{width:"100%",background:"#030712",border:"1px solid #374151",borderRadius:8,padding:"9px 12px",color:"#f9fafb",fontSize:14,boxSizing:"border-box"}}/>
+                      <div style={{display:"flex",gap:8}}>
+                        {[["Sets","sets"],["Reps","reps"],["Rest(s)","rest"]].map(([l,k]) => (
+                          <div key={k} style={{flex:1}}>
+                            <div style={{fontSize:10,color:"#6b7280",marginBottom:3}}>{l}</div>
+                            <input type={k==="reps"?"text":"number"} value={quickEx[k]} onChange={e => setQuickEx(q=>({...q,[k]:e.target.value}))}
+                              style={{width:"100%",background:"#030712",border:"1px solid #374151",borderRadius:8,padding:"8px 10px",color:"#f9fafb",fontSize:13,fontFamily:"monospace",boxSizing:"border-box"}}/>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{display:"flex",gap:8}}>
+                        <button onClick={() => setShowQuickAdd(false)} style={{flex:1,padding:"11px",borderRadius:10,border:"1px solid #374151",background:"transparent",color:"#6b7280",cursor:"pointer",fontSize:13}}>Cancel</button>
+                        <button onClick={addQuickExercise} disabled={!quickEx.name.trim()} style={{flex:2,padding:"11px",borderRadius:10,border:"none",background:quickEx.name.trim()?"#f59e0b":"#374151",color:quickEx.name.trim()?"#000":"#4b5563",cursor:quickEx.name.trim()?"pointer":"default",fontSize:13,fontWeight:700}}>Add for Today</button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <button onClick={() => setShowQuickAdd(true)}
+                    style={{width:"100%",padding:"12px",borderRadius:12,border:"2px dashed #374151",background:"transparent",color:"#4b5563",cursor:"pointer",fontSize:13,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+                    <PlusIcon/> Add Exercise (Today Only)
+                  </button>
+                )}
               </div>
 
               {prog.cardio && (
@@ -1074,12 +1286,29 @@ function App() {
       {tab === "progress" && (
         <div style={{padding:"20px 16px"}}>
           <div style={{fontSize:10,letterSpacing:3,color:"#374151",textTransform:"uppercase",fontFamily:"monospace",marginBottom:12}}>Exercise Progress</div>
+          {/* Search box */}
+          <div style={{position:"relative",marginBottom:12}}>
+            <input
+              type="text"
+              placeholder="Search exercises..."
+              value={exSearch}
+              onChange={e => setExSearch(e.target.value)}
+              style={{width:"100%",background:"#0a0f1a",border:"1px solid #1f2937",borderRadius:10,padding:"10px 36px 10px 12px",color:"#f9fafb",fontSize:14,boxSizing:"border-box",outline:"none"}}
+            />
+            {exSearch && (
+              <button onClick={() => setExSearch("")} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",color:"#6b7280",cursor:"pointer",fontSize:16,lineHeight:1}}>×</button>
+            )}
+          </div>
+          {/* Filtered exercise pills */}
           <div style={{display:"flex",gap:6,overflowX:"auto",scrollbarWidth:"none",marginBottom:16,paddingBottom:4}}>
-            {ALL_EXERCISES.map(ex => (
-              <button key={ex.name} onClick={() => setSelExercise(ex.name)} style={{flexShrink:0,padding:"7px 12px",borderRadius:20,border:"2px solid "+(selExercise===ex.name?ex.color:"#1f2937"),background:selExercise===ex.name?(ex.color+"18"):"#0a0f1a",color:selExercise===ex.name?ex.color:"#4b5563",cursor:"pointer",fontSize:11,fontWeight:selExercise===ex.name?700:400,whiteSpace:"nowrap"}}>
+            {ALL_EXERCISES.filter(ex => !exSearch || ex.name.toLowerCase().includes(exSearch.toLowerCase())).map(ex => (
+              <button key={ex.name} onClick={() => { setSelExercise(ex.name); setExSearch(""); }} style={{flexShrink:0,padding:"7px 12px",borderRadius:20,border:"2px solid "+(selExercise===ex.name?ex.color:"#1f2937"),background:selExercise===ex.name?(ex.color+"18"):"#0a0f1a",color:selExercise===ex.name?ex.color:"#4b5563",cursor:"pointer",fontSize:11,fontWeight:selExercise===ex.name?700:400,whiteSpace:"nowrap"}}>
                 {ex.name.split(" ").slice(0,2).join(" ")}
               </button>
             ))}
+            {ALL_EXERCISES.filter(ex => !exSearch || ex.name.toLowerCase().includes(exSearch.toLowerCase())).length === 0 && (
+              <div style={{fontSize:12,color:"#374151",padding:"8px 4px"}}>No exercises match "{exSearch}"</div>
+            )}
           </div>
           {(() => {
             const exMeta = ALL_EXERCISES.find(e => e.name === selExercise);
@@ -1229,7 +1458,14 @@ function App() {
 
       {/* EDIT TAB */}
       {tab === "edit" && (
-        <EditTab program={program} onEditDay={(d) => setEditingDay(d)} />
+        <EditTab
+          program={program}
+          onEditDay={(d) => setEditingDay(d)}
+          onAddWorkout={() => setCreatingWorkout(true)}
+          onAssignWorkout={assignWorkoutToDay}
+          savedWorkouts={savedWorkouts}
+          onDeleteWorkout={deleteSavedWorkout}
+        />
       )}
 
       {/* Bottom nav */}
@@ -1244,9 +1480,3 @@ function App() {
     </div>
   );
 }
-
-
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-  </script>
-</body>
-</html>
