@@ -317,6 +317,13 @@ function getTodayName() {
   const d = new Date().getDay();
   return DAYS[d === 0 ? 6 : d - 1];
 }
+function getWeekMonday() {
+  const now = new Date();
+  const day = now.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diff);
+  return monday.toISOString().slice(0, 10);
+}
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -2386,7 +2393,22 @@ function App() {
     }));
   }
   const [workoutLogs, setWorkoutLogs] = usePersistedState("dht_workoutLogs", {});
+  const [currentWeek, setCurrentWeek] = usePersistedState("dht_currentWeek", getWeekMonday());
+  const [weekArchive, setWeekArchive] = usePersistedState("dht_weekArchive", []);
   const [weightHistory, setWeightHistory] = usePersistedState("dht_weightHistory", {});
+
+  // Auto-reset workout logs when a new week starts
+  useEffect(() => {
+    const thisWeek = getWeekMonday();
+    if (currentWeek !== thisWeek) {
+      // Archive last week's logs before clearing
+      if (Object.keys(workoutLogs).length > 0) {
+        setWeekArchive(prev => [...prev, { week: currentWeek, logs: workoutLogs }]);
+      }
+      setWorkoutLogs({});
+      setCurrentWeek(thisWeek);
+    }
+  }, []);
   const [mileLog, setMileLog] = usePersistedState("dht_mileLog", []);
   const [weightOpen, setWeightOpen] = useState(null);
   const [sessionOrder, setSessionOrder] = useState(null);
